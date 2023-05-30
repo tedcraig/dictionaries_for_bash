@@ -1,0 +1,502 @@
+#! /usr/bin/env zsh
+
+# ===================================================================
+#
+#   name:   pathmod
+#   auth:   ted craig
+#
+#   desc:   Modifies PATH evironment variable by modifying arrays in
+#           a specified shell config file
+#
+# ===================================================================
+
+
+# ------------------------------------------------------------------------------
+# Global Vars
+# ------------------------------------------------------------------------------
+initialArgs=($@)    # will remain unmodified for debuggin purposes
+args=($@)           # will be mutated as options are handled
+bDebugMode=0        # init as false
+pathBefore="$PATH"    # store PATH value prior to processing in order to determine if changes occur
+CONFIG_FILE_TO_UPDATE=$HOME/.shellrc    # pathmod will update the contents of this file in order to change shell environment configuration
+pathsAdded=()       # array to store list of paths added to the PATH env var.  Is used to hightlight this paths at end when printing updated PATH to terminal
+highlightedPath=""  # will store a string containing the $PATH with added paths hightlighted
+
+# BASH COLORS
+# 
+# Black         \033[0;30m
+# Dark Gray     \033[1;30m
+# Red           \033[0;31m
+# Light Red     \033[1;31m
+# Green         \033[0;32m
+# Light Green   \033[1;32m
+# Brown/Orange  \033[0;33m
+# Yellow        \033[1;33m
+# Blue          \033[0;34m
+# Light Blue    \033[1;34m
+# Purple        \033[0;35m
+# Light Purple  \033[1;35m
+# Cyan          \033[0;36m
+# Light Cyan    \033[1;36m
+# Light Gray    \033[0;37m
+# White         \033[1;37m
+# reset Normal  \033[0;m
+
+# COLORS
+COLOR_BLUE="\033[0;34m"
+COLOR_CYAN="\033[0;36m"
+COLOR_GREEN="\033[0;32m"
+COLOR_GREY="\033[1;30m"
+COLOR_LIGHTBLUE="\033[1;34m"
+COLOR_LIGHTGREY="\033[0;37m"
+COLOR_ORANGE="\033[0;33m"
+COLOR_PURPLE="\033[0;35m"
+COLOR_YELLOW="\033[1;33m"
+
+COLOR_NORMAL="\033[0;m"
+COLOR_RESET=$COLOR_NORMAL   # alias
+
+# color to use for debug text
+COLOR_DEBUG_LOG=$COLOR_GREY
+COLOR_DEBUG_ATTN=$COLOR_GREY
+# color for updated PATH and highlighted path(s) added to it
+COLOR_PATH=$COLOR_ORANGE
+COLOR_PATH_HIGHLIGHT=$COLOR_YELLOW
+
+
+# ------------------------------------------------------------------------------
+# Debug Logger
+# ------------------------------------------------------------------------------
+function dEcho {
+    # bail if debug mode not enabled
+    if [[ $bDebugMode == 0 ]]; then
+        return 0;
+    fi
+
+    # TODO: investigate tput as alternative to ascii escape codes
+    #
+    # example:
+    # SET Attribute Foreground <colour 123>
+    # kindalightblue=$(tput setaf 123)
+    # ted's guess at useage:
+    # tput setaf 240; echo "This text has tput color attribute."; tput sgr0
+    #
+    # I've heard that tput is not entirely portable between shells
+    # but I don't think I care about that right now
+
+    # process debug message
+    if [[ $# -gt 0 ]]; then
+        echo -e "${COLOR_DEBUG_LOG}$1${COLOR_NORMAL}"
+    else
+        echo -e "${COLOR_DEBUG_ATTN}no arg sent to dEcho${COLOR_NORMAL}"
+    fi
+
+}
+
+
+# ------------------------------------------------------------------------------
+# Shift Args Array
+# ------------------------------------------------------------------------------
+function shiftArgsArr {
+    dEcho "{ shiftArgsArr }-> invoked"
+    dEcho "{ shiftArgsArr }-> global args:         ${args[*]}"
+
+    # convert args to positional params in order to use shift functionality
+    set -- ${args[*]}
+    
+    local params=($@)
+    dEcho "{ shiftArgsArr }-> positional params @: ${params[*]}"
+    
+    shift
+    
+    params=($@)
+    dEcho "{ shiftArgsArr }-> shifted params @:    ${params[*]}"
+    
+    # reassign the shifted params to global args
+    args=($@)
+    
+    dEcho "{ shiftArgsArr }-> args post shift:     ${args[*]}"
+    dEcho "{ shiftArgsArr }-> execultion complete"
+}
+
+
+# ------------------------------------------------------------------------------
+# Append Path(s)
+#
+# modifies contents of file ($CONFIG_FILE_TO_UPDATE)
+# adds specified paths to dirsToAppendToPathEnv array
+# these paths will then be appended to the PATH env var
+# ------------------------------------------------------------------------------
+function appendPath {
+
+    dEcho "{ appendPath }-> global args: ${args[*]}"
+
+    for arg in "${args[@]}"; do
+        if [[ -d "$arg" ]]; then
+            echo "appending to PATH: $arg"
+            
+            # add path $arg to the dirsToAppendToPathEnv array in $CONFIG_FILE_TO_UPDATE
+            awk -v pathToAppend="$arg \\" '/^dirsToAppendToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
+                {print pathToAppend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
+                mv awk-temp $CONFIG_FILE_TO_UPDATE
+
+            pathsAdded+=($arg)  # add to this array in order to get hightlighted when displaying updated PATH
+
+            shiftArgsArr
+            
+        elif [[ "$arg" == "-"* ]]; then
+            break
+        else
+            echo "unable to append to PATH: invalid path: $arg"
+        fi
+    done
+}
+
+
+# ------------------------------------------------------------------------------
+# Remove Specified Path
+# ------------------------------------------------------------------------------
+function removeSpecifiedPath {
+
+    # returning early in order to avoid running this code until its ready
+    return 0
+
+    # *********************
+    # NOT YET IMPLEMENTED USE NEW FILE-MODIFICATION STRATEGY
+    # *********************
+
+
+    #echo "removeSpecifiedPath args received: $@"
+    dEcho "{ removeSpecifiedPath }-> global args: ${args[*]}"
+
+    # bail if no args remain
+    if [[ ! ${#args[*]} -gt 0 ]]; then
+        echo "unable to remove from PATH: no path provided"
+        return
+    fi
+
+    # track if we had a path and attempted to process it
+    local bWasPathArg=0 # init to false
+
+    for arg in "${args[@]}"; do
+        if [[ -d "$arg" ]]; then
+            bWasPathArg=1
+            echo "removing from PATH: $arg"
+
+            dEcho "{ removeSpecifiedPath }-> PATH before removal: $PATH"
+
+            # Lifted from comment by user Cole
+            # https://unix.stackexchange.com/questions/108873/removing-a-directory-from-path
+
+            local newPath=$(echo "$PATH" | sed -e 's/:\/d\/Programme\/cygwin\/bin\(:\|$\)//')
+            export PATH=$newPath
+
+            dEcho "{ removeSpecifiedPath }-> PATH after removal:  $PATH"
+
+            shiftArgsArr
+
+        elif [[ "$arg" == "-"* ]]; then
+            dEcho "{ removeSpecifiedPath }-> bWasPathArg: $bWasPath" 
+            if [[ $bWasPathArg == 0 ]]; then
+                echo "unable to remove from PATH: no path provided"
+            fi
+            break
+        else
+            bWasPathArg=1
+            echo "unable to remove from PATH -> invalid path: $arg"
+        fi
+    done
+
+    dEcho "{ removeSpecifiedPath }-> execution complete"
+}
+
+
+# ------------------------------------------------------------------------------
+# Remove Duplicates
+# ------------------------------------------------------------------------------
+function removeDuplicates {
+
+    echo "remove duplicates option is not yet implemented
+
+    # dEcho "{ removeDuplicates }-> invoked"
+    # dEcho "{ removeDuplicates }-> PATH before processing:  $PATH"
+    
+    # # Lifted from answer by user maxschlepzig
+    # # https://unix.stackexchange.com/questions/40749/remove-duplicate-path-entries-with-awk-command
+    # local newPath=$(printf %s "$PATH" \
+    #     | awk -vRS=: -vORS= '!a[$0]++ {if (NR>1) printf(":"); printf("%s", $0) }' )
+    # # where:
+    # # 
+    # #   printf %s "$PATH"   prints the content of $PATH without a trailing newline
+    # #   RS=:                changes the input record delimiter character (default is newline)
+    # #   ORS=                changes the output record delimiter to the empty string
+    # #   a                   the name of an implicitly created array
+    # #   $0                  references the current record
+    # #   a[$0]               is a associative array dereference
+    # #   ++                  is the post-increment operator
+    # #   !a[$0]++            guards the right hand side, i.e. it makes sure that the current record is only printed, if it wasn't printed before
+    # #   NR                  the current record number, starting with 1
+    # #
+    # # That means that AWK is used to split the PATH content along the : delimiter characters
+    # # and to filter out duplicate entries without modifying the order.
+    # # 
+    # # Since AWK associative arrays are implemented as hash tables the runtime is linear (i.e. in O(n)).
+    # # 
+    # # Note that we don't need look for quoted : characters because shells don't provide quoting
+    # # to support directories with : in its name in the PATH variable.
+    # # -----------
+    # # Awk + paste
+    # # -----------
+    # # The above can be simplified with paste:
+    # # 
+    # #   PATH=$(printf %s "$PATH" | awk -vRS=: '!a[$0]++' | paste -s -d:)
+    # #
+    # # The paste command is used to intersperse the awk output with colons. 
+    # # This simplifies the awk action to printing (which is the default action).
+
+    # export PATH=$newPath
+
+    # dEcho "{ removeDuplicates }-> PATH after processing:   $PATH"
+
+    # dEcho "{ removeDuplicates }-> execution complete"
+}
+
+
+# ------------------------------------------------------------------------------
+# Help
+# ------------------------------------------------------------------------------
+function showHelp {
+    # Display Help
+    echo
+    echo "This script modifies the PATH env variable."
+    echo "It can remove duplicate paths or remove a specified path."
+    echo
+    echo "Syntax: pathmod <option> [path] [...additionalPaths] [...<option>...] "
+    echo
+    echo "options:"
+    echo "-a                    Append specified path(s) to PATH env variable."
+    echo "-d                    Remove duplicate paths found in PATH env variable."
+    echo "-h                    Print this Help message."
+    echo "-p                    Prepend specified path(s) to PATH env variable."
+    echo "-R                    Remove specified path(s) from PATH env variable."
+    echo
+    echo "long option aliases:"
+    echo "--add                 see -a"
+    echo "--append              see -a"
+    echo "--duplicates          see -d"
+    echo "--help                see -h"
+    echo "--prepend             see -p"
+    echo "--remove              see -R"
+    echo "--remove-duplicates   see -a"
+    echo
+    echo "Examples:"
+    echo
+    echo "pathmod -d"
+    echo "removes any duplicate paths found within PATH env variable"
+    echo
+    echo "pathmod -R /path1 /path2"
+    echo "removes path1 and path2 from PATH env variable"
+    echo
+    echo "multiple options can be used in the same execution:"
+    echo
+    echo "pathmod -R /path1 /path2 -p /path3 -a /path4"
+    echo "removes path1 and path2 from PATH env and then prepends path3"
+    echo "followed by appending path4."
+}
+
+
+# ------------------------------------------------------------------------------
+# Highlight Path
+# ------------------------------------------------------------------------------
+function hightlightPath {
+    
+    # takes ascii color string as argument
+
+    local PATH_COLOR=$COLOR_YELLOW      # default to yellow
+    local HIGHLIGHT_COLOR=$COLOR_BLUE   # default to blue
+
+    if [[ $# == 1 ]]; then
+        # should check for valid color
+        # but, for now, we will assume it is one
+        PATH_COLOR=$1
+        dEcho "${PATH_COLOR}PATH_COLOR${COLOR_RESET}"
+    elif [[ $# == 2 ]]; then
+        # should check for valid color
+        # but, for now, we will assume it is one
+        PATH_COLOR=$1
+        dEcho "${PATH_COLOR}PATH_COLOR${COLOR_RESET}"
+        HIGHLIGHT_COLOR=$2
+        dEcho "${HIGHLIGHT_COLOR}HIGHLIGHT COLOR${COLOR_RESET}"
+    fi
+
+    # assign to be string of the current PATH
+    highlightedPath="${PATH_COLOR}${PATH}"   
+
+    dEcho "path(s) to be highlighted:"
+    for path in ${pathsAdded[@]}; do
+        dEcho "${HIGHLIGHT_COLOR}highlighting: $path${COLOR_RESET}"
+        highlightedPath=${highlightedPath//$path/${HIGHLIGHT_COLOR}${path}${PATH_COLOR}}
+        dEcho "${COLOR_RESET}highlightedPath:"
+        dEcho "$highlightedPath"
+    done
+    
+    # make sure color is reset at the end of the string
+    dEcho "adding color reset to end of highlighted path"
+    highlightedPath=${highlightedPath}${COLOR_RESET}
+    dEcho $highlightedPath
+    dEcho "color reset test -- I should look normal"
+}
+
+
+# ------------------------------------------------------------------------------
+# Prepend PATH
+#
+# modifies contents of file ($CONFIG_FILE_TO_UPDATE)
+# adds specified paths to dirsToPrependToPathEnv array
+# these paths will then be prepended to the PATH env var
+# ------------------------------------------------------------------------------
+
+function prependPath {
+
+    dEcho "{ prependPath }-> invoked"
+    dEcho "{ prependPath }-> global args: ${args[*]}"
+
+    for arg in "${args[@]}"; do
+        if [[ -d "$arg" ]]; then
+            echo "prepending to PATH: $arg"
+
+            # add path $arg to the dirsToPrependToPathEnv array in $CONFIG_FILE_TO_UPDATE
+            awk -v pathToAppend="$arg \\" '/^dirsToPrependToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
+                {print pathToAppend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
+                mv awk-temp $CONFIG_FILE_TO_UPDATE
+
+            pathsAdded+=($arg)  # add to this array in order to get hightlighted when displaying updated PATH
+
+            shiftArgsArr
+            
+        elif [[ "$arg" == "-"* ]]; then
+            break
+        else
+            echo "unable to prepend to PATH: invalid path: $arg"
+        fi
+    done
+
+    dEcho "{ prependPath }-> execution complete"
+}
+
+
+# ------------------------------------------------------------------------------
+# Usage
+# ------------------------------------------------------------------------------
+function showUsage {
+    >&2 cat << EOF
+    Usage: $0
+        [ -a | --add | --append ] pathToBeAppended [ ...additionalPaths ]
+        [ -d | --duplicates | --remove-duplicates ]
+        [ -h | --help ]
+        [ -p | --prepend ] pathToBePrepended [ ...additionalPaths ]
+        [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ] 
+EOF
+}
+
+
+# ------------------------------------------------------------------------------
+# Handle Options
+# ------------------------------------------------------------------------------
+function handleOptions {
+
+    # Handle positional args manually
+    while [[ "${#args[@]}" -gt 0 ]]; do
+        dEcho "{ handleOptions }-> ========== << NEW ITERATION >> ========="
+        dEcho "{ handleOptions }-> ** current arg on this iteration: ${args[0]}"
+        case ${args[1]} in  # *** NOTE: in zsh ${args} returns a concatenated list of all elements also this array starts at index 1.  In bash, on the other hand, it starts at 0 or ${args}
+            --debug)
+                bDebugMode=1  # toggle to true
+                dEcho "** Debug mode enabled **"
+                dEcho "PATH before processing:"
+                dEcho $PATH
+                dEcho "${#initialArgs[*]} arguments initially passed to this script:"
+                dEcho "${initialArgs[*]}"
+                dEcho "{ handleOptions }-> ========== << NEW ITERATION >> ========="
+                dEcho "{ handleOptions }-> ** current arg on this iteration: ${args[0]}"
+                
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { debug }-> current args: ${args[*]}"
+                ;;
+            -a|--add|--append) 
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { append }-> current args: ${args[*]}"
+                appendPath
+                ;;
+            -d|--duplicates|--remove-duplicates)
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { duplicates }-> current args: ${args[*]}"
+                removeDuplicates
+                ;;
+            -h|--help)
+                dEcho "{ handleOptions }-> { help }-> current args: ${args[*]}"
+                showHelp
+                exit 0
+                ;;
+            -p|--prepend)
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { prepend }-> current args: ${args[*]}"
+                prependPath
+                ;;
+            -R|--remove)
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { remove }-> current args: ${args[*]}"
+                removeSpecifiedPath
+                ;;
+            *) echo "Unknown parameter passed: ${args}"
+                exit 1
+                ;;
+        esac
+        dEcho "{ handleOptions }-> post case args: ${args[*]}"
+    done
+}
+
+
+# ------------------------------------------------------------------------------
+#
+# Main program
+#
+# ------------------------------------------------------------------------------
+
+# if no args passed to this script, show usage info
+if [[ ! "$#" -gt 0 ]]; then
+    showUsage
+    exit 1
+fi
+
+# handle positional parameters
+handleOptions
+
+# *** DO THIS STUFF AFTER ANY UPDATES HAVE BEEN MADE TO .shellrc
+
+dEcho "PATH before processing:"
+dEcho "$PATH"
+
+# reload shell ?
+dEcho "reloading PATH (and all other env vars) by invoking command 'source \$home/.zshrc'"
+source $HOME/.zshrc
+
+dEcho "pathBefore length:   ${#pathBefore}"
+dEcho "current PATH length: ${#PATH}"
+
+# print updated PATH if it was changed
+if [[ "$pathBefore" == "$PATH" ]]; then
+    echo "PATH unchanged."
+    
+else
+    dEcho "pathBefore != current PATH"
+
+    # highlightPath (main color, hightlight color)
+    hightlightPath $COLOR_PATH $COLOR_PATH_HIGHLIGHT
+
+    echo "Updated PATH:"
+    # echo -e "$COLOR_YELLOW$PATH$COLOR_RESET"
+    echo "$highlightedPath"
+fi
+
+exit 0
