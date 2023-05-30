@@ -158,9 +158,6 @@ function appendPath {
 # ------------------------------------------------------------------------------
 function removeSpecifiedPath {
 
-    # returning early in order to avoid running this code until its ready
-    return 0
-
     # *********************
     # NOT YET IMPLEMENTED USE NEW FILE-MODIFICATION STRATEGY
     # *********************
@@ -359,7 +356,7 @@ function showHelp {
     # echo "-d                    Remove duplicate paths found in PATH env variable."
     echo "-h                    Print this Help message."
     echo "-p                    Prepend specified path(s) to PATH env variable."
-    echo "-R                    *not yet functional* Remove specified path(s) from PATH env variable. (if it is present in $CONFIG_FILE_TO_UPDATE)"
+    # echo "-R                    *not yet functional* Remove specified path(s) from PATH env variable. (if it is present in $CONFIG_FILE_TO_UPDATE)"
     echo
     echo "long option aliases:"
     echo "--add                 see -a"
@@ -367,22 +364,21 @@ function showHelp {
     # echo "--duplicates          see -d"
     echo "--help                see -h"
     echo "--prepend             see -p"
-    echo "--remove              see -R"
+    # echo "--remove              see -R"
     # echo "--remove-duplicates   see -d"
     echo
     echo "Examples:"
     echo
     echo "pathmod -a /path"
     echo "appends /path to PATH env variable"
-    echo
-    echo "pathmod -R /path1 /path2"
-    echo "removes path1 and path2 from PATH env variable"
+    # echo
+    # echo "pathmod -R /path1 /path2"
+    # echo "removes path1 and path2 from PATH env variable"
     echo
     echo "multiple options can be used in the same execution:"
     echo
-    echo "pathmod -R /path1 /path2 -p /path3 -a /path4"
-    echo "removes path1 and path2 from PATH env and then prepends path3"
-    echo "followed by appending path4."
+    echo "pathmod -p /path1 /path2 -a /path3"
+    echo "prepends path1 and path2 then appends path3."
 }
 
 
@@ -395,10 +391,10 @@ function showUsage {
         [ -a | --add | --append ] pathToBeAppended [ ...additionalPaths ]
         [ -h | --help ]
         [ -p | --prepend ] pathToBePrepended [ ...additionalPaths ]
-        [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ] ** NOT YET FUNCTIONING **
 EOF
 # removed feature:
 # [ -d | --duplicates | --remove-duplicates ]
+# [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ]
 }
 
 
@@ -430,11 +426,11 @@ function handleOptions {
                 dEcho "{ handleOptions }-> { append }-> current args: ${args[*]}"
                 appendPath
                 ;;
-            -d|--duplicates|--remove-duplicates)
-                shiftArgsArr
-                dEcho "{ handleOptions }-> { duplicates }-> current args: ${args[*]}"
-                removeDuplicates
-                ;;
+            # -d|--duplicates|--remove-duplicates)
+            #     shiftArgsArr
+            #     dEcho "{ handleOptions }-> { duplicates }-> current args: ${args[*]}"
+            #     removeDuplicates
+            #     ;;
             -h|--help)
                 dEcho "{ handleOptions }-> { help }-> current args: ${args[*]}"
                 showHelp
@@ -445,16 +441,21 @@ function handleOptions {
                 dEcho "{ handleOptions }-> { prepend }-> current args: ${args[*]}"
                 prependPath
                 ;;
-            -R|--remove)
-                shiftArgsArr
-                dEcho "{ handleOptions }-> { remove }-> current args: ${args[*]}"
-                removeSpecifiedPath
-                ;;
+            # -R|--remove)
+            #     shiftArgsArr
+            #     dEcho "{ handleOptions }-> { remove }-> current args: ${args[*]}"
+            #     removeSpecifiedPath
+            #     ;;
             *) echo "Unknown parameter passed: ${args}"
                 exit 1
                 ;;
         esac
         dEcho "{ handleOptions }-> post case args: ${args[*]}"
+        # get to the next option param if we aren't already at one
+        while [[ ${#args[@]} -gt 0 ]] && [[ ${args[1]} != '-'* ]]; do
+            echo "skipping unknown argument: ${args[1]}"
+            shiftArgsArr
+        done
     done
 }
 
