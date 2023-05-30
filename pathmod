@@ -216,7 +216,7 @@ function removeSpecifiedPath {
 # ------------------------------------------------------------------------------
 function removeDuplicates {
 
-    echo "remove duplicates option is not yet implemented
+    echo "remove duplicates option is not yet implemented"
 
     # dEcho "{ removeDuplicates }-> invoked"
     # dEcho "{ removeDuplicates }-> PATH before processing:  $PATH"
@@ -259,49 +259,6 @@ function removeDuplicates {
     # dEcho "{ removeDuplicates }-> PATH after processing:   $PATH"
 
     # dEcho "{ removeDuplicates }-> execution complete"
-}
-
-
-# ------------------------------------------------------------------------------
-# Help
-# ------------------------------------------------------------------------------
-function showHelp {
-    # Display Help
-    echo
-    echo "This script modifies the PATH env variable."
-    echo "It can remove duplicate paths or remove a specified path."
-    echo
-    echo "Syntax: pathmod <option> [path] [...additionalPaths] [...<option>...] "
-    echo
-    echo "options:"
-    echo "-a                    Append specified path(s) to PATH env variable."
-    echo "-d                    Remove duplicate paths found in PATH env variable."
-    echo "-h                    Print this Help message."
-    echo "-p                    Prepend specified path(s) to PATH env variable."
-    echo "-R                    Remove specified path(s) from PATH env variable."
-    echo
-    echo "long option aliases:"
-    echo "--add                 see -a"
-    echo "--append              see -a"
-    echo "--duplicates          see -d"
-    echo "--help                see -h"
-    echo "--prepend             see -p"
-    echo "--remove              see -R"
-    echo "--remove-duplicates   see -a"
-    echo
-    echo "Examples:"
-    echo
-    echo "pathmod -d"
-    echo "removes any duplicate paths found within PATH env variable"
-    echo
-    echo "pathmod -R /path1 /path2"
-    echo "removes path1 and path2 from PATH env variable"
-    echo
-    echo "multiple options can be used in the same execution:"
-    echo
-    echo "pathmod -R /path1 /path2 -p /path3 -a /path4"
-    echo "removes path1 and path2 from PATH env and then prepends path3"
-    echo "followed by appending path4."
 }
 
 
@@ -386,17 +343,62 @@ function prependPath {
 
 
 # ------------------------------------------------------------------------------
+# Help
+# ------------------------------------------------------------------------------
+function showHelp {
+    # Display Help
+    echo
+    echo "This script modifies the PATH env variable."
+    echo "This is acheived by modifying the shell script config file:"
+    echo "$CONFIG_FILE_TO_UPDATE"
+    echo
+    echo "Syntax: pathmod <option> [path] [...additionalPaths] [...<option>...] "
+    echo
+    echo "options:"
+    echo "-a                    Append specified path(s) to PATH env variable."
+    # echo "-d                    Remove duplicate paths found in PATH env variable."
+    echo "-h                    Print this Help message."
+    echo "-p                    Prepend specified path(s) to PATH env variable."
+    echo "-R                    *not yet functional* Remove specified path(s) from PATH env variable. (if it is present in $CONFIG_FILE_TO_UPDATE)"
+    echo
+    echo "long option aliases:"
+    echo "--add                 see -a"
+    echo "--append              see -a"
+    # echo "--duplicates          see -d"
+    echo "--help                see -h"
+    echo "--prepend             see -p"
+    echo "--remove              see -R"
+    # echo "--remove-duplicates   see -d"
+    echo
+    echo "Examples:"
+    echo
+    echo "pathmod -a /path"
+    echo "appends /path to PATH env variable"
+    echo
+    echo "pathmod -R /path1 /path2"
+    echo "removes path1 and path2 from PATH env variable"
+    echo
+    echo "multiple options can be used in the same execution:"
+    echo
+    echo "pathmod -R /path1 /path2 -p /path3 -a /path4"
+    echo "removes path1 and path2 from PATH env and then prepends path3"
+    echo "followed by appending path4."
+}
+
+
+# ------------------------------------------------------------------------------
 # Usage
 # ------------------------------------------------------------------------------
 function showUsage {
     >&2 cat << EOF
     Usage: $0
         [ -a | --add | --append ] pathToBeAppended [ ...additionalPaths ]
-        [ -d | --duplicates | --remove-duplicates ]
         [ -h | --help ]
         [ -p | --prepend ] pathToBePrepended [ ...additionalPaths ]
-        [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ] 
+        [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ] ** NOT YET FUNCTIONING **
 EOF
+# removed feature:
+# [ -d | --duplicates | --remove-duplicates ]
 }
 
 
