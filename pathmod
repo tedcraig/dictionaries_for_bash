@@ -372,8 +372,10 @@ function prependPath {
             echo "prepending to PATH: $pathToPrepend"
 
             # add path $arg to the dirsToPrependToPathEnv array in $CONFIG_FILE_TO_UPDATE
-            awk -v pathToPrepend="$pathToPrepend \\" '/^dirsToPrependToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
-                {print pathToPrepend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
+            
+            awk -v pathToPrepend="$pathToPrepend \\" \
+                '/^dirsToPrependToPathEnv=\(\\$/{print; print pathToPrepend; next}1' \
+                $CONFIG_FILE_TO_UPDATE > awk-temp && \
                 mv awk-temp $CONFIG_FILE_TO_UPDATE
 
             pathsAdded+=($pathToPrepend)  # add to this array in order to get hightlighted when displaying updated PATH
