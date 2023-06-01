@@ -158,12 +158,7 @@ function appendPath {
 # ------------------------------------------------------------------------------
 function removeSpecifiedPath {
 
-    # *********************
-    # NOT YET IMPLEMENTED USE NEW FILE-MODIFICATION STRATEGY
-    # *********************
-
-
-    #echo "removeSpecifiedPath args received: $@"
+    dEcho "{ removeSpecifiedPath }-> invoked"
     dEcho "{ removeSpecifiedPath }-> global args: ${args[*]}"
 
     # bail if no args remain
@@ -172,33 +167,84 @@ function removeSpecifiedPath {
         return
     fi
 
-    # track if we had a path and attempted to process it
-    local bWasPathArg=0 # init to false
+    # TODO:
+    # If path to remove could include an environmental var substitution
+    # (like $HOME or ~), search for combinations of that
+    
+    # assigned $arg if valid path -- for improved readability
+    local pathToRemove=
+    local escapedPathToRemove=
+    
+    # declare boolean to track if we ever see a valid path. 
+    # This helps to provide detailed feedback to user.
+    local bWasPathArg=0 
+    
+    # vars to track how many times the pathToRemove string is found
+    local numberOfMatches=
+    local numberOfMatchesAfterAwk=
+    
 
     for arg in "${args[@]}"; do
         if [[ -d "$arg" ]]; then
+            # handle case: current arg is a valid path
             bWasPathArg=1
-            echo "removing from PATH: $arg"
+            pathToRemove="$arg" # just to make things more readable
+            echo "searching ${CONFIG_FILE_TO_UPDATE} for path: ${pathToRemove}"
+            numberOfMatches=$(grep -c "${pathToRemove} \\\\" $CONFIG_FILE_TO_UPDATE)
+            if [[ $numberOfMatches -gt 0 ]]; then
 
-            dEcho "{ removeSpecifiedPath }-> PATH before removal: $PATH"
+                echo "path found ${numberOfMatches} times."
+                
+                dEcho "{ removeSpecifiedPath }-> PATH before removal attempt: $PATH"
 
-            # Lifted from comment by user Cole
-            # https://unix.stackexchange.com/questions/108873/removing-a-directory-from-path
+                # escape chars as needed
+                escapedPathToRemove=${pathToRemove//\//\\\/} # escape /
+                # escapedPathToRemove=${pathToRemove//\$/\\\$} # escape $ # this breaks things
+                
+                # add single white space at end of escapedPath 
+                # in order to differentiate parent dirs and sub dirs
+                escapedPathToRemove+=' ';
+                
+                dEcho "{ removeSpecifiedPath }-> escapedPathToRemove: $escapedPathToRemove"
 
-            local newPath=$(echo "$PATH" | sed -e 's/:\/d\/Programme\/cygwin\/bin\(:\|$\)//')
-            export PATH=$newPath
+                # TODO: refactor removal via awk (or other method) into a single step rather than two.
 
-            dEcho "{ removeSpecifiedPath }-> PATH after removal:  $PATH"
+                # remove from dirsToPrependToPathEnv array
+                awk -v escapedPathToRemove=$escapedPathToRemove 'NR==1 {f = 1} /dirsToPrependToPathEnv=\(/{ f = 0 } f; \
+                    /dirsToPrependToPathEnv=\(/, /\)/ { if ($0 !~ escapedPathToRemove) print }; \
+                    /dirsToPrependToPathEnv=\(/{ f = 0 } /\)/{ f = 1 } EOF' \
+                    .shellrc > awktemp && mv awktemp .shellrc
+
+                # remove from dirsToAppendToPathEnv array
+                awk -v escapedPathToRemove=$escapedPathToRemove 'NR==1 {f = 1} /dirsToAppendToPathEnv=\(/{ f = 0 } f; \
+                    /dirsToAppendToPathEnv=\(/, /\)/ { if ($0 !~ escapedPathToRemove) print }; \
+                    /dirsToAppendToPathEnv=\(/{ f = 0 } /\)/{ f = 1 } EOF' \
+                    .shellrc > awktemp && mv awktemp .shellrc
+
+                numberOfMatchesAfterAwk=$(grep -c "${pathToRemove} \\\\" $CONFIG_FILE_TO_UPDATE)
+                if [[ $numberOfMatchesAfterAwk == 0 ]]; then
+                    echo "${pathToRemove} --> removed from $CONFIG_FILE_TO_UPDATE"
+                else
+                    echo "${pathToRemove} --> may not be fully removed from $CONFIG_FILE_TO_UPDATE"    
+                fi
+            else
+                echo "unable to remove: ${pathToRemove} --> Path not found in ${CONFIG_FILE_TO_UPDATE}"
+            fi
+
+            dEcho "{ removeSpecifiedPath }-> PATH after removal attempt:  $PATH"
 
             shiftArgsArr
 
-        elif [[ "$arg" == "-"* ]]; then
+        elif [[ "$arg" == "-"* ]]; then 
+            # handle case: we've encountered the next option argument so stop looping
+            
             dEcho "{ removeSpecifiedPath }-> bWasPathArg: $bWasPath" 
             if [[ $bWasPathArg == 0 ]]; then
-                echo "unable to remove from PATH: no path provided"
+                echo "unable to remove from PATH --> no path provided"
             fi
             break
         else
+            # handle case: an arg was provided but it isn't a valid path
             bWasPathArg=1
             echo "unable to remove from PATH -> invalid path: $arg"
         fi
@@ -214,6 +260,7 @@ function removeSpecifiedPath {
 function removeDuplicates {
 
     echo "remove duplicates option is not yet implemented"
+   
 
     # dEcho "{ removeDuplicates }-> invoked"
     # dEcho "{ removeDuplicates }-> PATH before processing:  $PATH"
@@ -315,16 +362,21 @@ function prependPath {
     dEcho "{ prependPath }-> invoked"
     dEcho "{ prependPath }-> global args: ${args[*]}"
 
+    pathToPrepend=
+
     for arg in "${args[@]}"; do
         if [[ -d "$arg" ]]; then
-            echo "prepending to PATH: $arg"
+
+            pathToPrepend="$arg" # for readability
+
+            echo "prepending to PATH: $pathToPrepend"
 
             # add path $arg to the dirsToPrependToPathEnv array in $CONFIG_FILE_TO_UPDATE
-            awk -v pathToAppend="$arg \\" '/^dirsToPrependToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
-                {print pathToAppend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
+            awk -v pathToPrepend="$pathToPrepend \\" '/^dirsToPrependToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
+                {print pathToPrepend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
                 mv awk-temp $CONFIG_FILE_TO_UPDATE
 
-            pathsAdded+=($arg)  # add to this array in order to get hightlighted when displaying updated PATH
+            pathsAdded+=($pathToPrepend)  # add to this array in order to get hightlighted when displaying updated PATH
 
             shiftArgsArr
             
@@ -364,21 +416,23 @@ function showHelp {
     # echo "--duplicates          see -d"
     echo "--help                see -h"
     echo "--prepend             see -p"
-    # echo "--remove              see -R"
+    echo "--remove              see -R"
     # echo "--remove-duplicates   see -d"
     echo
     echo "Examples:"
     echo
-    echo "pathmod -a /path"
-    echo "appends /path to PATH env variable"
-    # echo
-    # echo "pathmod -R /path1 /path2"
-    # echo "removes path1 and path2 from PATH env variable"
+    echo "pathmod -a path1"
+    echo "appends path1 to PATH env variable"
+    echo 
+    echo "multiple paths arguments can be passed to append, prepend, and remove:"
+    echo
+    echo "pathmod -R path1 path2"
+    echo "removes path1 and path2 from PATH env variable"
     echo
     echo "multiple options can be used in the same execution:"
     echo
-    echo "pathmod -p /path1 /path2 -a /path3"
-    echo "prepends path1 and path2 then appends path3."
+    echo "pathmod -p path1 path2 -a path3"
+    echo "prepends path1 and path2 then appends path3"
 }
 
 
@@ -391,10 +445,11 @@ function showUsage {
         [ -a | --add | --append ] pathToBeAppended [ ...additionalPaths ]
         [ -h | --help ]
         [ -p | --prepend ] pathToBePrepended [ ...additionalPaths ]
+        [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ]
 EOF
 # removed feature:
 # [ -d | --duplicates | --remove-duplicates ]
-# [ -R | --remove ] pathToBeRemoved [ ...additionalPaths ]
+
 }
 
 
@@ -441,11 +496,11 @@ function handleOptions {
                 dEcho "{ handleOptions }-> { prepend }-> current args: ${args[*]}"
                 prependPath
                 ;;
-            # -R|--remove)
-            #     shiftArgsArr
-            #     dEcho "{ handleOptions }-> { remove }-> current args: ${args[*]}"
-            #     removeSpecifiedPath
-            #     ;;
+            -R|--remove)
+                shiftArgsArr
+                dEcho "{ handleOptions }-> { remove }-> current args: ${args[*]}"
+                removeSpecifiedPath
+                ;;
             *) echo "Unknown parameter passed: ${args}"
                 exit 1
                 ;;
@@ -478,18 +533,21 @@ handleOptions
 # *** DO THIS STUFF AFTER ANY UPDATES HAVE BEEN MADE TO .shellrc
 
 dEcho "PATH before processing:"
-dEcho "$PATH"
+dEcho "$pathBefore"
 
-# reload shell ?
+# reload shell
 dEcho "reloading PATH (and all other env vars) by invoking command 'source \$home/.zshrc'"
 source $HOME/.zshrc
+
+dEcho "PATH after processing:"
+dEcho "$PATH"
 
 dEcho "pathBefore length:   ${#pathBefore}"
 dEcho "current PATH length: ${#PATH}"
 
 # print updated PATH if it was changed
 if [[ "$pathBefore" == "$PATH" ]]; then
-    echo "PATH unchanged."
+    echo "${COLOR_PATH}PATH unchanged.${COLOR_RESET}"
     
 else
     dEcho "pathBefore != current PATH"
