@@ -8,17 +8,22 @@
 #   desc:   Modifies PATH evironment variable by modifying arrays in
 #           a specified shell config file
 #
+#   compatibility: 
+#           works with:     Terminal (macOs), Alacritty (macOs)
+#           inconsistant:   iTerm2 (macOs)
+#
 # ===================================================================
 
 
 # ------------------------------------------------------------------------------
 # Global Vars
 # ------------------------------------------------------------------------------
-initialArgs=($@)    # will remain unmodified for debuggin purposes
+initialArgs=($@)    # will remain unmodified for debugging purposes
 args=($@)           # will be mutated as options are handled
 bDebugMode=0        # init as false
 pathBefore="$PATH"    # store PATH value prior to processing in order to determine if changes occur
-CONFIG_FILE_TO_UPDATE=$HOME/.shellrc    # pathmod will update the contents of this file in order to change shell environment configuration
+CONFIG_FILE_TO_UPDATE="$HOME/.shellrc"    # pathmod will update the contents of this file in order to change shell environment configuration
+TEMP_FILE="pathmod-temp"    # name of temp file created during append, prepend, and remove
 pathsAdded=()       # array to store list of paths added to the PATH env var.  Is used to hightlight this paths at end when printing updated PATH to terminal
 highlightedPath=""  # will store a string containing the $PATH with added paths hightlighted
 
@@ -65,7 +70,14 @@ COLOR_PATH_HIGHLIGHT=$COLOR_YELLOW
 
 
 # ------------------------------------------------------------------------------
+# dEcho (MESSAGE:string)
+#
 # Debug Logger
+#
+# checks global var 'bDebugMode' -- if value 1 it prints the string arg passed;
+# if value 0, doesn't print
+#
+# takes single string as argument
 # ------------------------------------------------------------------------------
 function dEcho {
     # bail if debug mode not enabled
@@ -81,14 +93,15 @@ function dEcho {
     # ted's guess at useage:
     # tput setaf 240; echo "This text has tput color attribute."; tput sgr0
     #
-    # I've heard that tput is not entirely portable between shells
+    # My understanding is that tput is not entirely portable between shells
     # but I don't think I care about that right now
 
     # process debug message
     if [[ $# -gt 0 ]]; then
-        echo -e "${COLOR_DEBUG_LOG}$1${COLOR_NORMAL}"
+        local MESSAGE=$1
+        echo -e "${COLOR_DEBUG_LOG}${MESSAGE}${COLOR_RESET}"
     else
-        echo -e "${COLOR_DEBUG_ATTN}no arg sent to dEcho${COLOR_NORMAL}"
+        echo -e "${COLOR_DEBUG_ATTN}no arg sent to dEcho${COLOR_RESET}"
     fi
 
 }
@@ -96,9 +109,11 @@ function dEcho {
 
 # ------------------------------------------------------------------------------
 # Shift Args Array
+#
+# shifts first element off of the global array 'args'
 # ------------------------------------------------------------------------------
 function shiftArgsArr {
-    dEcho "{ shiftArgsArr }-> invoked"
+    dEcho "{ shiftArgsArr }-> invoked ..."
     dEcho "{ shiftArgsArr }-> global args:         ${args[*]}"
 
     # convert args to positional params in order to use shift functionality
@@ -121,15 +136,80 @@ function shiftArgsArr {
 
 
 # ------------------------------------------------------------------------------
+# Prepend PATH
+#
+# modifies contents of file ($CONFIG_FILE_TO_UPDATE)
+# adds specified paths to dirsToPrependToPathEnv array
+# these paths will then be prepended to the PATH env var
+#
+# reads values from global array 'args' and 
+# invokes shiftArgsArr to remove values from 'args' 
+# after attempting to process an non-option-flag argument
+# ------------------------------------------------------------------------------
+
+function prependPath {
+
+    dEcho "{ prependPath }-> invoked"
+    dEcho "{ prependPath }-> global args: ${args[*]}"
+
+    local TEMP_FILE=pathmod-temp
+    local pathToPrepend=
+
+    for arg in "${args[@]}"; do
+        if [[ -d "$arg" ]]; then
+
+            pathToPrepend="$arg" # for readability
+
+            echo "prepending to PATH: $pathToPrepend"
+
+            # add path $arg to the dirsToPrependToPathEnv array in $CONFIG_FILE_TO_UPDATE
+            
+            awk -v pathToPrepend="$pathToPrepend \\" \
+                '/^dirsToPrependToPathEnv=\(\\$/{print; print pathToPrepend; next}1' \
+                $CONFIG_FILE_TO_UPDATE > $TEMP_FILE && \
+                mv $TEMP_FILE $CONFIG_FILE_TO_UPDATE
+
+            pathsAdded+=($pathToPrepend)  # add to this array in order to get hightlighted when displaying updated PATH
+
+            shiftArgsArr
+            
+        elif [[ "$arg" == "-"* ]]; then
+            break
+        else
+            echo "unable to prepend to PATH: invalid path: $arg"
+
+            shiftArgsArr
+        fi
+    done
+
+    # clean up temp file if created
+    if [ -f "$TEMP_FILE" ]; then
+        dEcho "{ appendPath }-> cleaning up temp file: $TEMP_FILE"
+        rm $TEMP_FILE
+    else
+        dEcho "{ appendPath }-> temp file not found: $TEMP_FILE"
+    fi
+
+    dEcho "{ prependPath }-> execution complete"
+}
+
+
+# ------------------------------------------------------------------------------
 # Append Path(s)
 #
 # modifies contents of file ($CONFIG_FILE_TO_UPDATE)
 # adds specified paths to dirsToAppendToPathEnv array
 # these paths will then be appended to the PATH env var
+#
+# reads values from global array 'args' and 
+# invokes shiftArgsArr to remove values from 'args' 
+# after attempting to process an non-option-flag argument
 # ------------------------------------------------------------------------------
 function appendPath {
-
+    dEcho "{ appendPath }-> invoked ..."
     dEcho "{ appendPath }-> global args: ${args[*]}"
+
+    local TEMP_FILE=pathmod-temp
 
     for arg in "${args[@]}"; do
         if [[ -d "$arg" ]]; then
@@ -137,8 +217,8 @@ function appendPath {
             
             # add path $arg to the dirsToAppendToPathEnv array in $CONFIG_FILE_TO_UPDATE
             awk -v pathToAppend="$arg \\" '/^dirsToAppendToPathEnv=\(\\$/{f=1}f&&/^\)$/ \
-                {print pathToAppend}1' $CONFIG_FILE_TO_UPDATE > awk-temp && \
-                mv awk-temp $CONFIG_FILE_TO_UPDATE
+                {print pathToAppend}1' $CONFIG_FILE_TO_UPDATE > $TEMP_FILE && \
+                mv $TEMP_FILE $CONFIG_FILE_TO_UPDATE
 
             pathsAdded+=($arg)  # add to this array in order to get hightlighted when displaying updated PATH
 
@@ -148,17 +228,36 @@ function appendPath {
             break
         else
             echo "unable to append to PATH: invalid path: $arg"
+
+            shiftArgsArr
         fi
     done
+
+    # clean up temp file if created
+    if [ -f "$TEMP_FILE" ]; then
+        dEcho "{ appendPath }-> cleaning up temp file: $TEMP_FILE"
+        rm $TEMP_FILE
+    else
+        dEcho "{ appendPath }-> temp file not found: $TEMP_FILE"
+    fi
+
+    dEcho "{ appendPath }-> execution complete"
 }
 
 
 # ------------------------------------------------------------------------------
 # Remove Specified Path
+#
+# attempts to remove specified path by deleting that path entry from 
+# file assigned to global var 'CONFIG_TILE_TO_UPDATE'
+# 
+# reads values from global array 'args' and 
+# invokes shiftArgsArr to remove values from 'args' 
+# after attempting to process an non-option-flag argument
 # ------------------------------------------------------------------------------
 function removeSpecifiedPath {
 
-    dEcho "{ removeSpecifiedPath }-> invoked"
+    dEcho "{ removeSpecifiedPath }-> invoked ..."
     dEcho "{ removeSpecifiedPath }-> global args: ${args[*]}"
 
     # bail if no args remain
@@ -175,14 +274,12 @@ function removeSpecifiedPath {
     local pathToRemove=
     local escapedPathToRemove=
     
-    # declare boolean to track if we ever see a valid path. 
-    # This helps to provide detailed feedback to user.
+    # declare boolean to track if we ever see a valid path in order to. 
+    # provide more detailed feedback to user.
     local bWasPathArg=0 
     
-    # vars to track how many times the pathToRemove string is found
     local numberOfMatches=
     local numberOfMatchesAfterAwk=
-    
 
     for arg in "${args[@]}"; do
         if [[ -d "$arg" ]]; then
@@ -199,7 +296,6 @@ function removeSpecifiedPath {
 
                 # escape chars as needed
                 escapedPathToRemove=${pathToRemove//\//\\\/} # escape /
-                # escapedPathToRemove=${pathToRemove//\$/\\\$} # escape $ # this breaks things
                 
                 # add single white space at end of escapedPath 
                 # in order to differentiate parent dirs and sub dirs
@@ -213,13 +309,13 @@ function removeSpecifiedPath {
                 awk -v escapedPathToRemove=$escapedPathToRemove 'NR==1 {f = 1} /dirsToPrependToPathEnv=\(/{ f = 0 } f; \
                     /dirsToPrependToPathEnv=\(/, /\)/ { if ($0 !~ escapedPathToRemove) print }; \
                     /dirsToPrependToPathEnv=\(/{ f = 0 } /\)/{ f = 1 } EOF' \
-                    .shellrc > awktemp && mv awktemp .shellrc
+                    .shellrc > $TEMP_FILE && mv $TEMP_FILE .shellrc
 
                 # remove from dirsToAppendToPathEnv array
                 awk -v escapedPathToRemove=$escapedPathToRemove 'NR==1 {f = 1} /dirsToAppendToPathEnv=\(/{ f = 0 } f; \
                     /dirsToAppendToPathEnv=\(/, /\)/ { if ($0 !~ escapedPathToRemove) print }; \
                     /dirsToAppendToPathEnv=\(/{ f = 0 } /\)/{ f = 1 } EOF' \
-                    .shellrc > awktemp && mv awktemp .shellrc
+                    .shellrc > $TEMP_FILE && mv $TEMP_FILE .shellrc
 
                 numberOfMatchesAfterAwk=$(grep -c "${pathToRemove} \\\\" $CONFIG_FILE_TO_UPDATE)
                 if [[ $numberOfMatchesAfterAwk == 0 ]]; then
@@ -247,8 +343,18 @@ function removeSpecifiedPath {
             # handle case: an arg was provided but it isn't a valid path
             bWasPathArg=1
             echo "unable to remove from PATH -> invalid path: $arg"
+            shiftArgsArr
         fi
     done
+
+    # clean up temp file if created
+    if [ -f "./${TEMP_FILE}" ]; then
+        dEcho "{ removeSpecifiedPath }-> cleaning up temp file: ${TEMP_FILE}"
+        rm ./${TEMP_FILE}
+    else
+        dEcho "{ removeSpecifiedPath }-> temp file not found: ${TEMP_FILE}"
+    fi
+
 
     dEcho "{ removeSpecifiedPath }-> execution complete"
 }
@@ -256,6 +362,8 @@ function removeSpecifiedPath {
 
 # ------------------------------------------------------------------------------
 # Remove Duplicates
+# 
+# no longer implemented here.  This functionality has been moved into the config file
 # ------------------------------------------------------------------------------
 function removeDuplicates {
 
@@ -307,25 +415,31 @@ function removeDuplicates {
 
 
 # ------------------------------------------------------------------------------
-# Highlight Path
+# Highlight Path (PATH_COLOR:asciiColorString, HIGHLIGHT_COLOR:asciiColorString)
+#
+# builds a string containing the PATH environmental variable with ascii colors
+# inserted in order to call attention to changes made to the PATH
+#
+# result assigned to global var 'highlightedPath'
 # ------------------------------------------------------------------------------
 function hightlightPath {
     
-    # takes ascii color string as argument
+    dEcho "{ hightlightPath }-> invoked ..."
 
+    # takes ascii color string as argument
+    
     local PATH_COLOR=$COLOR_YELLOW      # default to yellow
     local HIGHLIGHT_COLOR=$COLOR_BLUE   # default to blue
 
-    if [[ $# == 1 ]]; then
+    if [[ $# -gt 0 ]]; then
         # should check for valid color
         # but, for now, we will assume it is one
         PATH_COLOR=$1
         dEcho "${PATH_COLOR}PATH_COLOR${COLOR_RESET}"
-    elif [[ $# == 2 ]]; then
+    fi
+    if [[ $# -gt 1 ]]; then
         # should check for valid color
         # but, for now, we will assume it is one
-        PATH_COLOR=$1
-        dEcho "${PATH_COLOR}PATH_COLOR${COLOR_RESET}"
         HIGHLIGHT_COLOR=$2
         dEcho "${HIGHLIGHT_COLOR}HIGHLIGHT COLOR${COLOR_RESET}"
     fi
@@ -336,67 +450,29 @@ function hightlightPath {
     dEcho "path(s) to be highlighted:"
     for path in ${pathsAdded[@]}; do
         dEcho "${HIGHLIGHT_COLOR}highlighting: $path${COLOR_RESET}"
-        highlightedPath=${highlightedPath//$path/${HIGHLIGHT_COLOR}${path}${PATH_COLOR}}
+        highlightedPath="${highlightedPath//$path/${HIGHLIGHT_COLOR}${path}${PATH_COLOR}}"
         dEcho "${COLOR_RESET}highlightedPath:"
-        dEcho "$highlightedPath"
+        dEcho "${highlightedPath}"
     done
     
     # make sure color is reset at the end of the string
     dEcho "adding color reset to end of highlighted path"
-    highlightedPath=${highlightedPath}${COLOR_RESET}
-    dEcho $highlightedPath
+    highlightedPath="${highlightedPath}${COLOR_RESET}"
+    dEcho "${highlightedPath}"
     dEcho "color reset test -- I should look normal"
-}
-
-
-# ------------------------------------------------------------------------------
-# Prepend PATH
-#
-# modifies contents of file ($CONFIG_FILE_TO_UPDATE)
-# adds specified paths to dirsToPrependToPathEnv array
-# these paths will then be prepended to the PATH env var
-# ------------------------------------------------------------------------------
-
-function prependPath {
-
-    dEcho "{ prependPath }-> invoked"
-    dEcho "{ prependPath }-> global args: ${args[*]}"
-
-    pathToPrepend=
-
-    for arg in "${args[@]}"; do
-        if [[ -d "$arg" ]]; then
-
-            pathToPrepend="$arg" # for readability
-
-            echo "prepending to PATH: $pathToPrepend"
-
-            # add path $arg to the dirsToPrependToPathEnv array in $CONFIG_FILE_TO_UPDATE
-            
-            awk -v pathToPrepend="$pathToPrepend \\" \
-                '/^dirsToPrependToPathEnv=\(\\$/{print; print pathToPrepend; next}1' \
-                $CONFIG_FILE_TO_UPDATE > awk-temp && \
-                mv awk-temp $CONFIG_FILE_TO_UPDATE
-
-            pathsAdded+=($pathToPrepend)  # add to this array in order to get hightlighted when displaying updated PATH
-
-            shiftArgsArr
-            
-        elif [[ "$arg" == "-"* ]]; then
-            break
-        else
-            echo "unable to prepend to PATH: invalid path: $arg"
-        fi
-    done
-
-    dEcho "{ prependPath }-> execution complete"
+    dEcho "{ hightlightPath }-> execution complete"
 }
 
 
 # ------------------------------------------------------------------------------
 # Help
+#
+# Prints detailed usage info
 # ------------------------------------------------------------------------------
 function showHelp {
+
+    dEcho "{ showHelp }-> invoked ..."
+
     # Display Help
     echo
     echo "This script modifies the PATH env variable."
@@ -435,13 +511,20 @@ function showHelp {
     echo
     echo "pathmod -p path1 path2 -a path3"
     echo "prepends path1 and path2 then appends path3"
+
+    dEcho "{ showHelp }-> execution complete"
 }
 
 
 # ------------------------------------------------------------------------------
 # Usage
+#
+# prints brief usage info
 # ------------------------------------------------------------------------------
 function showUsage {
+
+    dEcho "{ showUsage }-> invoked ..."
+
     >&2 cat << EOF
     Usage: $0
         [ -a | --add | --append ] pathToBeAppended [ ...additionalPaths ]
@@ -452,6 +535,8 @@ EOF
 # removed feature:
 # [ -d | --duplicates | --remove-duplicates ]
 
+    dEcho "{ showUsage }-> execution complete"
+
 }
 
 
@@ -459,6 +544,8 @@ EOF
 # Handle Options
 # ------------------------------------------------------------------------------
 function handleOptions {
+    
+    dEcho "{ handleOptions }-> invoked ..."
 
     # Handle positional args manually
     while [[ "${#args[@]}" -gt 0 ]]; do
@@ -474,7 +561,6 @@ function handleOptions {
                 dEcho "${initialArgs[*]}"
                 dEcho "{ handleOptions }-> ========== << NEW ITERATION >> ========="
                 dEcho "{ handleOptions }-> ** current arg on this iteration: ${args[0]}"
-                
                 shiftArgsArr
                 dEcho "{ handleOptions }-> { debug }-> current args: ${args[*]}"
                 ;;
@@ -514,6 +600,8 @@ function handleOptions {
             shiftArgsArr
         done
     done
+
+    dEcho "{ handleOptions }-> execution complete"
 }
 
 
@@ -529,10 +617,10 @@ if [[ ! "$#" -gt 0 ]]; then
     exit 1
 fi
 
-# handle positional parameters
+# handle positional arguments
 handleOptions
 
-# *** DO THIS STUFF AFTER ANY UPDATES HAVE BEEN MADE TO .shellrc
+# *** DO THIS STUFF AFTER ANY UPDATES HAVE BEEN MADE TO file assigned to CONFIG_FILE_TO_UPDATE
 
 dEcho "PATH before processing:"
 dEcho "$pathBefore"
@@ -554,11 +642,10 @@ if [[ "$pathBefore" == "$PATH" ]]; then
 else
     dEcho "pathBefore != current PATH"
 
-    # highlightPath (main color, hightlight color)
+    # highlightPath (main-color, hightlight-color)
     hightlightPath $COLOR_PATH $COLOR_PATH_HIGHLIGHT
 
     echo "Updated PATH:"
-    # echo -e "$COLOR_YELLOW$PATH$COLOR_RESET"
     echo "$highlightedPath"
 fi
 
