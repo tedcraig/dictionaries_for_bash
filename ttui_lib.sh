@@ -46,6 +46,7 @@ trap 'ttui::get_term_size' WINCH
 # -----------------------------------------------------------------------------
 ttui::enable_debug_mode() {
   TTUI_DEBUG_LOGS_ENABLED=true
+  ttui::debug_logger "debug mode enabled"
 }
 
 
@@ -331,8 +332,8 @@ ttui::show_cursor() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::save_cursor_position() {
-  # printf '\e7'
-  printf '\[s'
+  # This is more widely supported than '\e[s'.
+  printf '\e7'
 }
 
 
@@ -344,8 +345,8 @@ ttui::save_cursor_position() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::restore_cursor_position() {
-  # printf '\e8'
-  printf '\e[u'
+  # This is more widely supported than '\e[u'.
+  printf '\e8'
 }
 
 
@@ -514,3 +515,9 @@ ttui::move_cursor_to_bottom() {
 ttui::move_cursor_to_home() {
   printf '\e[2J'
 }
+
+
+# -----------------------------------------------------------------------------
+# Load notice
+# -----------------------------------------------------------------------------
+echo "ttui_lib loaded"
