@@ -25,8 +25,9 @@ TTUI_TERM_LINES=
 TTUI_TERM_COLUMNS=
 TTUI_CURRENT_LINE=
 TTUI_CURRENT_COLUMN=
-ttui_cursor_visible=true
-ttui_line_wrapping_enabled=true
+TTUI_CURSOR_VISIBLE=true
+TTUI_LINE_WRAPPING_ENABLED=true
+TTUI_COLOR_RGB=()
 
 
 # -----------------------------------------------------------------------------
@@ -220,14 +221,14 @@ ttui::get_term_size() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::enable_line_wrapping() {
+ttui::disable_line_wrapping() {
   printf '\e[?7l'
-  ttui_line_wrapping_enabled=false
+  TTUI_LINE_WRAPPING_ENABLED=false
 }
 
 
 # -----------------------------------------------------------------------------
-# Enables line wrapping
+#  line wrapping
 # Globals:
 #   line_wrapping_enabled
 # Arguments:
@@ -235,7 +236,7 @@ ttui::enable_line_wrapping() {
 # -----------------------------------------------------------------------------
 ttui::enable_line_wrapping() {
   printf '\e[?7h'
-  ttui_line_wrapping_enabled=true
+  TTUI_LINE_WRAPPING_ENABLED=true
 }
 
 
@@ -250,7 +251,7 @@ ttui::enable_line_wrapping() {
 #   position 2: bottom line number (positive int) inclusive
 # -----------------------------------------------------------------------------
 ttui::set_scroll_area() {
-  echo "${FUNCNAME[0]}: num args: $#"
+  ttui::debug_logger "${FUNCNAME[0]}: num args: $#"
   # See: https://vt100.net/docs/vt510-rm/DECSTBM.html
   # Limit scrolling from line 0 to line 10.
   # printf '\e[0;10r'
@@ -306,7 +307,7 @@ ttui::scroll_down() {
 # -----------------------------------------------------------------------------
 ttui::hide_cursor() {
   printf '\e[?25l'
-  cursor_visible=false
+  TTUI_CURSOR_VISIBLE=false
 }
 
 
@@ -319,7 +320,7 @@ ttui::hide_cursor() {
 # -----------------------------------------------------------------------------
 ttui::show_cursor() {
   printf '\e[?25h'
-  cursor_visible=true
+  TTUI_CURSOR_VISIBLE=true
 }
 
 
@@ -362,7 +363,7 @@ ttui::get_cursor_position() {
   # Get the cursor position
   # '\e[6n'
   # IFS='[;' read -p $'\e7\e[9999;9999H\e[6n\e8' -d R -rs _ TTUI_TERM_LINES TTUI_TERM_COLUMNS
-  echo "${FUNCNAME[0]}: printf:"
+  ttui::debug_logger "${FUNCNAME[0]}: printf:"
   # printf '\e[6n'
   # echo "${FUNCNAME[0]}: read:"
   # IFS='[;' read -p $'\e[6n' -d R -rs _ TTUI_CURRENT_LINE TTUI_CURRENT_COLUMN
@@ -388,7 +389,7 @@ ttui::get_cursor_position() {
   
   IFS="${old_ifs}"
 
-  echo "current position: Line ${TTUI_CURRENT_LINE} | Col ${TTUI_CURRENT_COLUMN}"
+  ttui::debug_logger "current position: Line ${TTUI_CURRENT_LINE} | Col ${TTUI_CURRENT_COLUMN}"
 }
 
 
@@ -401,8 +402,8 @@ ttui::get_cursor_position() {
 #   position 2: column number (positive int) or '-' (any non-digit char)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_to() {
-  echo "${FUNCNAME[0]}: $# arguments received"
-  echo "arg \$1: $1 | \$2: $2"
+  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "arg \$1: $1 | \$2: $2"
   # See: https://vt100.net/docs/vt510-rm/CUP.html
   # Move the cursor to 0,0.
   #   printf '\e[H'
@@ -424,13 +425,16 @@ ttui::move_cursor_to() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_up() {
-  echo "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUU.html
   # if no value passed, move up 1 line
-  # printf '\e[A'
-
+  local num_lines_to_move=1
   # else move up the specified number of lines
   # printf '\e[%sA' "${num_lines_to_move}"
+  # Todo: validate arg is actually a valid number
+  [[ $# -gt 0 ]] && num_lines_to_move=$1
+
+  printf '\e[%sA' "${num_lines_to_move}"
 }
 
 
@@ -442,13 +446,17 @@ ttui::move_cursor_up() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_down() {
-  echo "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUD.html
   # if no value passed, move up 1 line
   # printf '\e[B'
-
+  local num_lines_to_move=1
   # else move up the specified number of lines
   # printf '\e[%sB' "${num_lines_to_move}"
+  # Todo: validate arg is actually a valid number
+  [[ $# -gt 0 ]] && num_lines_to_move=$1
+  
+  printf '\e[%sB' "${num_lines_to_move}"
 }
 
 
@@ -460,13 +468,17 @@ ttui::move_cursor_down() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_left() {
-  echo "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUB.html
   # if no value passed, move up 1 line
   # printf '\e[D'
-
-  # else move up the specified number of lines
-  # printf '\e[%sD' "${num_lines_to_move}"
+  local num_columns_to_move=1
+  # else move left the specified number of columns
+  # printf '\e[%sD' "${num_columns_to_move}"
+  # Todo: validate arg is actually a valid number
+  [[ $# -gt 0 ]] && num_columns_to_move=$1
+  
+  printf '\e[%sD' "${num_columns_to_move}"
 }
 
 
@@ -478,13 +490,17 @@ ttui::move_cursor_left() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_right() {
-  echo "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUF.html
   # if no value passed, move up 1 line
   # printf '\e[C'
-
-  # else move up the specified number of lines
-  # printf '\e[%sC' "${num_lines_to_move}"
+  local num_columns_to_move=1
+  # else move up the specified number of columns
+  # printf '\e[%sC' "${num_columns_to_move}"
+  # Todo: validate arg is actually a valid number
+  [[ $# -gt 0 ]] && num_columns_to_move=$1
+  
+  printf '\e[%sC' "${num_columns_to_move}"
 }
 
 
@@ -520,4 +536,4 @@ ttui::move_cursor_to_home() {
 # -----------------------------------------------------------------------------
 # Load notice
 # -----------------------------------------------------------------------------
-echo "ttui_lib loaded"
+ttui::debug_logger "ttui_lib loaded"
