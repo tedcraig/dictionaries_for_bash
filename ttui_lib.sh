@@ -783,6 +783,59 @@ ttui::get_color_rgb_from_lch() {
 
 
 # -----------------------------------------------------------------------------
+# Generates RGB color escape code string using the argument values supplied. 
+# If optional variable name argument is provided, resulting escape code will be 
+# assigned to variable matching the provided name.  
+# If optional variable name argument is not used then resulting escape code will
+# be assigned global variable TTUI_COLOR_RGB.
+# Globals:
+#   TTUI_COLOR_RGB
+# Arguments:
+#   position 1:  Red    value (0-255)
+#   position 2:  Blue   value (0-255)
+#   position 3:  Green  value (0-255)
+#  [position 4:] name of existing variable to which result should be assigned
+# -----------------------------------------------------------------------------
+ttui::get_color_rgb_escape_code() {
+  
+  ##########  TODO:
+  ##########  check that args in position 1, 2, 3 are numbers 
+  ##########  and that they are within the legal range for RGB
+  ##########  values: 0-255
+  
+  local RED=$1
+  local GREEN=$2
+  local BLUE=$3
+  
+  # assign escape code string ---------------------------------------------------
+  #   if option fourth arg exists, then try to assign values to variable of the same name
+  #   else assign values to default global variable
+  if [[ $# -gt 3 ]]; then
+    ttui::debug_logger "4th arg found: $4"
+    # check if the string value of myVar is the name of a declared variable
+    local varName="$4"
+    # myVar='$'"$4"
+    local bVarExists=false
+    local test='if ${'"${varName}"'+"false"}; then ttui::debug_logger "${varName} not defined"; else bVarExists=true; ttui::debug_logger "${varName} is defined"; fi'
+    ttui::debug_logger "test: $test"
+    eval $test
+    ttui::debug_logger  "bVarExists: ${bVarExists}"
+
+    if [[ $bVarExists == true ]]; then
+      local assignment="${varName}"'="\033[38;2;${RED};${GREEN};${BLUE}m"'
+      ttui::debug_logger  "assignment: ${assignment}"
+      eval $assignment
+    else
+      echo "${FUNCNAME[0]} --> warning: cannot assign RGB color escape code to ${varName}: undelcared variable"
+    fi
+  else
+    ttui::debug_logger "no var name provided. Assigning RGB color escape code to TTUI_COLOR_RGB_FROM_LCH"
+    TTUI_COLOR_RGB='\033[38;2;'"${RED};${GREEN};${BLUE}"'m'
+  fi
+}
+
+
+# -----------------------------------------------------------------------------
 # Confirms that this script has been loaded and functions are available
 # Globals:
 #   none
