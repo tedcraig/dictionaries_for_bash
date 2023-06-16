@@ -7,6 +7,8 @@
 #
 #   desc:   Terminal UI library for Bash.
 #
+#   dependancies:   awk (developed using version 20200816)
+#
 #   acknowledgment: Special thanks to Dylan Araps who has generously shared
 #                   with the world their extensive knowledge of 
 #                   shell scripting, especially the esoteric world of console
@@ -781,6 +783,12 @@ ttui::get_color_rgb_from_lch() {
 
 
 # -----------------------------------------------------------------------------
-# Load notice
+# Confirms that this script has been loaded and functions are available
+# Globals:
+#   none
+# Arguments:
+#   none
 # -----------------------------------------------------------------------------
-ttui::debug_logger "ttui_lib loaded"
+ttui::lib_is_loaded() {
+  echo "ttui_lib is loaded"
+}
