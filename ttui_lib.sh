@@ -571,7 +571,11 @@ ttui::get_color_rgb_from_lch() {
   ##########  TODO:
   ##########  refactor to reduce awk invocations.
   ##########  maybe introduce function calls within awk to reduce code repetition
-  ##########  (unless that is less performant)  
+  ##########  (unless that is less performant)
+
+  ttui::debug_logger "received $# args"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   
   # assign positional args 1,2,3 as prospective LCH values
   local LCH_L=$1
@@ -796,8 +800,12 @@ ttui::get_color_rgb_from_lch() {
 #   position 3:  Green  value (0-255)
 #  [position 4:] name of existing variable to which result should be assigned
 # -----------------------------------------------------------------------------
-ttui::get_color_rgb_escape_code() {
+ttui::get_color_escape_code_rgb() {
   
+  ttui::debug_logger "received $# args"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
+
   ##########  TODO:
   ##########  check that args in position 1, 2, 3 are numbers 
   ##########  and that they are within the legal range for RGB
@@ -832,6 +840,47 @@ ttui::get_color_rgb_escape_code() {
     ttui::debug_logger "no var name provided. Assigning RGB color escape code to TTUI_COLOR_RGB_FROM_LCH"
     TTUI_COLOR_RGB='\033[38;2;'"${RED};${GREEN};${BLUE}"'m'
   fi
+}
+
+
+# -----------------------------------------------------------------------------
+# Sets color to specified RGB value.
+# This color will remain active until the it is intentionally reset.
+# Globals:
+#   none
+# Arguments:
+#   position 1:  Red    value (0-255)
+#   position 2:  Blue   value (0-255)
+#   position 3:  Green  value (0-255)
+# -----------------------------------------------------------------------------
+ttui::set_color_rgb() {
+  ttui::debug_logger "received $# args"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
+
+  ##########  TODO:
+  ##########  check that args in position 1, 2, 3 are numbers 
+  ##########  and that they are within the legal range for RGB
+  ##########  values: 0-255
+  
+  local RED=$1
+  local GREEN=$2
+  local BLUE=$3
+
+  printf "\033[38;2;%d;%d;%dm" ${RED} ${GREEN} ${BLUE};
+
+}
+
+
+# -----------------------------------------------------------------------------
+# Sets color to terminal default.
+# Globals:
+#   none
+# Arguments:
+#   none
+# -----------------------------------------------------------------------------
+ttui::reset_color() {
+  printf "\033[0m"
 }
 
 
