@@ -384,36 +384,85 @@ ttui::restore_cursor_position() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::get_cursor_position() {
-  # Get the cursor position
-  # '\e[6n'
-  # IFS='[;' read -p $'\e7\e[9999;9999H\e[6n\e8' -d R -rs _ TTUI_TERM_LINES TTUI_TERM_COLUMNS
-  ttui::debug_logger "${FUNCNAME[0]}: printf:"
-  # printf '\e[6n'
-  # echo "${FUNCNAME[0]}: read:"
-  # IFS='[;' read -p $'\e[6n' -d R -rs _ TTUI_CURRENT_LINE TTUI_CURRENT_COLUMN
-  # returns ^[[line;columnR --> eg. ^[[57;1R 
-  # IFS value will split the response at [ and ;
-  # -p -sr will print the escape sequence as the prompt (which will have the control effect on the terminal)
-  # -sr will silence the prompt and ...
-  # -d R will stop the read when char 'R' is encountered
-  # this results in three values: '[', 'line', 'column'
-  # we assign these values to vars listed at tail of the command
-  #   [ --> _ (i.e. gets ignored)
-  #   line --> TTUI_CURRENT_LINE
-  #   column --> TTUI_CURRENT_COLUMN
-  local old_ifs="$IFS"
-    IFS='[;' read -p $'\e[6n' -d R -rs _ TTUI_CURRENT_LINE TTUI_CURRENT_COLUMN
-  #\_______/
-  #    |
-  # overrides default
-  # delimeters for
-  # output of the read.
-  # Will capture values
-  # between [ and/or ; chars
+  ttui::debug_logger "invoked ..."
+  ttui::debug_logger "received $# args"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   
+  # save the current/default IFS delimeter(s) in order to restore later
+  local old_ifs="$IFS"
+  
+  # assign line and column nums -------------------------------------------------
+  #   if more than one arg exists, then try to assign values to variables
+  #   of the same name.
+  #   else assign values to default global variable.
+  if [[ $# -gt 1 ]]; then
+    ttui::debug_logger "1st arg found: $1"
+    ttui::debug_logger "2nd arg found: $2"
+    # check if the string value of myVar is the name of a declared variable
+    local lineVarName="$1"
+    local bLineVarExists=false
+    local test='if ${'"${lineVarName}"'+"false"}; then ttui::debug_logger "${lineVarName} not defined"; else bLineVarExists=true; ttui::debug_logger "${lineVarName} is defined"; fi'
+    ttui::debug_logger "test: $test"
+    eval $test
+    ttui::debug_logger  "bLineVarExists: ${bLineVarExists}"
+
+    local columnVarName="$2"
+    local bColumnVarExists=false
+    local test='if ${'"${columnVarName}"'+"false"}; then ttui::debug_logger "${columnVarName} not defined"; else bColumnVarExists=true; ttui::debug_logger "${columnVarName} is defined"; fi'
+    ttui::debug_logger "test: $test"
+    eval $test
+    ttui::debug_logger  "bColumnVarExists: ${bColumnVarExists}"
+
+    if [[ $bLineVarExists == true ]] && [[ $bColumnVarExists == true ]]; then
+      local assignment="IFS='[;' read -p $'\e[6n' -d R -rs _ ${lineVarName} ${columnVarName}"
+      #                 \______/ \__/ \_________/ \__/ \_/ \___________________________/
+      #                    |      |       |        |    |                |
+      #                    |      |       |        |    |  Variables to receive output of read,
+      #                    |      |       |        |    |  as parsed by the IFS delimeters.
+      #                    |      |       |        |    |  ^[ThrowAway[Lines;ColumnsR
+      #                    |      |       |        |    |  var:  -
+      #                    |      |       |        |    |     receives superfluous value
+      #                    |      |       |        |    |     parsed between [ and [
+      #                    |      |       |        |    |  var:  LINE_NUM_VAR
+      #                    |      |       |        |    |     receives line number value
+      #                    |      |       |        |    |     parsed between [ and ;
+      #                    |      |       |        |    |  var:  COLUMN_NUM_VAR
+      #                    |      |       |        |    |     receives column number value
+      #                    |      |       |        |    |     parsed between ; and R
+      #                    |      |       |        |     \
+      #                    |      |       |        |  Do not treat a Backslash as an escape character.
+      #                    |      |       |        |  Silent mode: any characters input from the terminal
+      #                    |      |       |        |  are not echoed.
+      #                    |      |       |        |
+      #                    |      |       |  Terminates the input line at R rather than at newline 
+      #                    |      |       |
+      #                    |      |  Prints '\e[6n' as prompt to console.
+      #                    |      |  This term command escape code is immediately interpted, generating
+      #                    |      |  response code containing the line and column position
+      #                    |      |  in format: ^[[1;2R  (where num at position 1 is the line number
+      #                    |      |  and num at position 2 is the column number). This response string
+      #                    |      |  becomes the input of the read command.
+      #                    |      |
+      #                    |  Read input from console
+      #                    |
+      #                  Overrides default delimeters for output of the read.
+      #                  Will capture values between [ and/or ; chars
+      ttui::debug_logger  "assignment: ${assignment}"
+      eval $assignment
+    else
+      echo "${FUNCNAME[0]} --> warning: cannot assign cursor position values to provided var names: ${lineVarName} and/or ${columnVarName}: undelcared or invalid variable"
+    fi
+  else
+    ttui::debug_logger "no var name provided. Assigning cursor position values to global vars TTUI_CURRENT_LINE TTUI_CURRENT_COLUMN"
+    IFS='[;' read -p $'\e[6n' -d R -rs _ TTUI_CURRENT_LINE TTUI_CURRENT_COLUMN
+  fi
+  
+  # reset delimeters to original/default value
   IFS="${old_ifs}"
 
   ttui::debug_logger "current position: Line ${TTUI_CURRENT_LINE} | Col ${TTUI_CURRENT_COLUMN}"
+  ttui::debug_logger "** execution complete **"
 }
 
 
@@ -805,6 +854,8 @@ ttui::get_color_rgb_from_lch() {
     ttui::debug_logger "no var name provided. Assigning to TTUI_COLOR_RGB_FROM_LCH"
     TTUI_COLOR_RGB_FROM_LCH=($RGB_R $RGB_G $RGB_B)
   fi
+
+  ttui::debug_logger "** execution complete **"
 }
 
 
@@ -891,6 +942,7 @@ ttui::set_color_rgb() {
 
   printf "\033[38;2;%d;%d;%dm" ${RED} ${GREEN} ${BLUE};
 
+  ttui::debug_logger "** execution complete **"
 }
 
 
