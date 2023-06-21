@@ -15,6 +15,11 @@
 #                   control escape sequences.
 #                   https://github.com/dylanaraps
 #
+#   NOTE:   There are some potentially dangerous things in here.  In order to
+#           allow for the flexibility of having functions write values to 
+#           user specified variables, the eval command is used which could
+#           result in chaos, or worse, if strings of a certain nature are passed
+#           into it.
 # =============================================================================
 
 
