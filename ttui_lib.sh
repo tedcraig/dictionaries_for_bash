@@ -27,6 +27,10 @@
 # Global Vars
 # -----------------------------------------------------------------------------
 TTUI_DEBUG_LOGS_ENABLED=false
+TTUI_INVOKED_DEBUG_MSG="=========== invoked =========="
+TTUI_EXECUTION_COMPLETE_DEBUG_MSG="  --- execution complete ---"
+TTUI_SHOULD_USE_WHOLE_TERM_WINDOW=false
+TTUI_SCROLL_AREA_CHANGED=false
 TTUI_OPERATING_SYSTEM=
 TTUI_TERM_LINES=
 TTUI_TERM_COLUMNS=
@@ -65,6 +69,9 @@ TTUI_MOVE_CURSOR_TO_BOTTOM_LINE='\e[9999H'
 
 # React to window size changes via SIGWINCH
 trap 'ttui::get_term_size' WINCH
+# Clean up upon exit signal.  If this trap is overridden, overriding script
+# should call this function within its own exit handling
+trap 'ttui::handle_exit' EXIT
 
 
 # -----------------------------------------------------------------------------
@@ -137,6 +144,7 @@ ttui::debug_logger() {
 # ┃ Haiku	              │ haiku               ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
 ttui::get_operating_system() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # '$OSTYPE' typically stores the name of the OS kernel.
   case "$OSTYPE" in
     linux*)
@@ -161,6 +169,7 @@ ttui::get_operating_system() {
       #...
     ;;
   esac
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -192,6 +201,7 @@ ttui::save_terminal_screen() {
 #   None
 # -----------------------------------------------------------------------------
 ttui::restore_terminal_screen() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?1049l'
 }
 
@@ -204,6 +214,7 @@ ttui::restore_terminal_screen() {
 #   None
 # -----------------------------------------------------------------------------
 ttui::reset_terminal_to_defaults() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\ec'
 }
 
@@ -216,6 +227,7 @@ ttui::reset_terminal_to_defaults() {
 #   None
 # -----------------------------------------------------------------------------
 ttui::clear_screen() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # See: https://vt100.net/docs/vt510-rm/ED.html
   # Ps represents the amount of the display to erase.
   # Ps	Area Erased:
@@ -235,11 +247,13 @@ ttui::clear_screen() {
 #   None
 # -----------------------------------------------------------------------------
 ttui::get_term_size() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # '\e7':           Save the current cursor position.
   # '\e[9999;9999H': Move the cursor to the bottom right corner.
   # '\e[6n':         Get the cursor position (window size).
   # '\e8':           Restore the cursor to its previous position.
   IFS='[;' read -p $'\e7\e[9999;9999H\e[6n\e8' -d R -rs _ TTUI_TERM_LINES TTUI_TERM_COLUMNS
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -251,6 +265,7 @@ ttui::get_term_size() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::disable_line_wrapping() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?7l'
   TTUI_LINE_WRAPPING_ENABLED=false
 }
@@ -264,6 +279,7 @@ ttui::disable_line_wrapping() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::enable_line_wrapping() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?7h'
   TTUI_LINE_WRAPPING_ENABLED=true
 }
@@ -280,12 +296,23 @@ ttui::enable_line_wrapping() {
 #   position 2: bottom line number (positive int) inclusive
 # -----------------------------------------------------------------------------
 ttui::set_scroll_area() {
-  ttui::debug_logger "${FUNCNAME[0]}: num args: $#"
-  # See: https://vt100.net/docs/vt510-rm/DECSTBM.html
-  # Limit scrolling from line 0 to line 10.
-  # printf '\e[0;10r'
-  # Limit scrolling from line top to line bottom.
-  # printf '\e[%s;%sr' "${top_line_of_scroll}" "${bottom_line_of_scroll}"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
+
+  ## TODO: arg validation
+  if [[ $# -gt 1 ]]; then
+    local top_line_of_scroll=$1
+    local bottom_line_of_scroll=$2
+    # See: https://vt100.net/docs/vt510-rm/DECSTBM.html
+    # Limit scrolling from line 0 to line 10.
+    # printf '\e[0;10r'
+    # Limit scrolling from line top to line bottom.
+    printf '\e[%s;%sr' "${top_line_of_scroll}" "${bottom_line_of_scroll}"
+    TTUI_SCROLL_AREA_CHANGED=true
+  fi
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -298,8 +325,10 @@ ttui::set_scroll_area() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::restore_scroll_area() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # See: https://vt100.net/docs/vt510-rm/DECSTBM.html
   printf '\e[;r'
+  TTUI_SCROLL_AREA_CHANGED=false
 }
 
 
@@ -311,6 +340,7 @@ ttui::restore_scroll_area() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::scroll_up() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\eM'
 }
 
@@ -323,6 +353,7 @@ ttui::scroll_up() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::scroll_down() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\eD'
 }
 
@@ -335,6 +366,7 @@ ttui::scroll_down() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::hide_cursor() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?25l'
   TTUI_CURSOR_VISIBLE=false
 }
@@ -348,6 +380,7 @@ ttui::hide_cursor() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::show_cursor() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?25h'
   TTUI_CURSOR_VISIBLE=true
 }
@@ -362,6 +395,7 @@ ttui::show_cursor() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::save_cursor_position() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # This is more widely supported than '\e[s'.
   printf '\e7'
 }
@@ -375,6 +409,7 @@ ttui::save_cursor_position() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::restore_cursor_position() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # This is more widely supported than '\e[u'.
   printf '\e8'
 }
@@ -389,8 +424,8 @@ ttui::restore_cursor_position() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::get_cursor_position() {
-  ttui::debug_logger "invoked ..."
-  ttui::debug_logger "received $# args"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   local expanded_args=$(echo "$@")
   ttui::debug_logger "args received: $expanded_args"
   
@@ -467,7 +502,7 @@ ttui::get_cursor_position() {
   IFS="${old_ifs}"
 
   ttui::debug_logger "current position: Line ${TTUI_CURRENT_LINE} | Col ${TTUI_CURRENT_COLUMN}"
-  ttui::debug_logger "** execution complete **"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -480,7 +515,8 @@ ttui::get_cursor_position() {
 #   position 2: column number (positive int) or '-' (any non-digit char)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_to() {
-  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   ttui::debug_logger "arg \$1: $1 | \$2: $2"
   # See: https://vt100.net/docs/vt510-rm/CUP.html
   # Move the cursor to 0,0.
@@ -491,7 +527,7 @@ ttui::move_cursor_to() {
   # Move the cursor to line 5.
   #   printf '\e[5H'
   #   printf '\e[%sH]' "${line_number}"
-
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -503,7 +539,8 @@ ttui::move_cursor_to() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_up() {
-  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUU.html
   # if no value passed, move up 1 line
   local num_lines_to_move=1
@@ -513,6 +550,7 @@ ttui::move_cursor_up() {
   [[ $# -gt 0 ]] && num_lines_to_move=$1
 
   printf '\e[%sA' "${num_lines_to_move}"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -524,7 +562,8 @@ ttui::move_cursor_up() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_down() {
-  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUD.html
   # if no value passed, move up 1 line
   # printf '\e[B'
@@ -535,6 +574,7 @@ ttui::move_cursor_down() {
   [[ $# -gt 0 ]] && num_lines_to_move=$1
   
   printf '\e[%sB' "${num_lines_to_move}"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -546,7 +586,8 @@ ttui::move_cursor_down() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_left() {
-  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUB.html
   # if no value passed, move up 1 line
   # printf '\e[D'
@@ -557,6 +598,7 @@ ttui::move_cursor_left() {
   [[ $# -gt 0 ]] && num_columns_to_move=$1
   
   printf '\e[%sD' "${num_columns_to_move}"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -568,7 +610,8 @@ ttui::move_cursor_left() {
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_right() {
-  ttui::debug_logger "${FUNCNAME[0]}: $# arguments received"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   # See: https://vt100.net/docs/vt510-rm/CUF.html
   # if no value passed, move up 1 line
   # printf '\e[C'
@@ -579,6 +622,7 @@ ttui::move_cursor_right() {
   [[ $# -gt 0 ]] && num_columns_to_move=$1
   
   printf '\e[%sC' "${num_columns_to_move}"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -591,6 +635,7 @@ ttui::move_cursor_right() {
 #   position 2: column number (positive int) or '-' (any non-digit char)
 # -----------------------------------------------------------------------------
 ttui::move_cursor_to_bottom() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   # Using terminal size, move cursor to bottom.
   # printf '\e[%sH' "$LINES"
   #  -- or --
@@ -607,6 +652,7 @@ ttui::move_cursor_to_bottom() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::move_cursor_to_home() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[2J'
 }
 
@@ -648,8 +694,8 @@ ttui::get_color_rgb_from_lch() {
   ##########  refactor to reduce awk invocations.
   ##########  maybe introduce function calls within awk to reduce code repetition
   ##########  (unless that is less performant)
-
-  ttui::debug_logger "received $# args"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   local expanded_args=$(echo "$@")
   ttui::debug_logger "args received: $expanded_args"
   
@@ -860,7 +906,7 @@ ttui::get_color_rgb_from_lch() {
     TTUI_COLOR_RGB_FROM_LCH=($RGB_R $RGB_G $RGB_B)
   fi
 
-  ttui::debug_logger "** execution complete **"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -879,8 +925,8 @@ ttui::get_color_rgb_from_lch() {
 #  [position 4:] name of existing variable to which result should be assigned
 # -----------------------------------------------------------------------------
 ttui::get_color_escape_code_rgb() {
-  
-  ttui::debug_logger "received $# args"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   local expanded_args=$(echo "$@")
   ttui::debug_logger "args received: $expanded_args"
 
@@ -918,6 +964,7 @@ ttui::get_color_escape_code_rgb() {
     ttui::debug_logger "no var name provided. Assigning RGB color escape code to TTUI_COLOR_RGB_FROM_LCH"
     TTUI_COLOR_RGB='\033[38;2;'"${RED};${GREEN};${BLUE}"'m'
   fi
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -932,7 +979,8 @@ ttui::get_color_escape_code_rgb() {
 #   position 3:  Green  value (0-255)
 # -----------------------------------------------------------------------------
 ttui::set_color_rgb() {
-  ttui::debug_logger "received $# args"
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
   local expanded_args=$(echo "$@")
   ttui::debug_logger "args received: $expanded_args"
 
@@ -947,7 +995,7 @@ ttui::set_color_rgb() {
 
   printf "\033[38;2;%d;%d;%dm" ${RED} ${GREEN} ${BLUE};
 
-  ttui::debug_logger "** execution complete **"
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
 
 
@@ -959,6 +1007,7 @@ ttui::set_color_rgb() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::reset_color() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf "\033[0m"
 }
 
@@ -971,5 +1020,34 @@ ttui::reset_color() {
 #   none
 # -----------------------------------------------------------------------------
 ttui::lib_is_loaded() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   echo "ttui_lib is loaded"
 }
+
+
+ttui::initialize() {
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
+  echo "${FUNCNAME[0]} --> initializing"
+  echo "TTUI_SHOULD_USE_WHOLE_TERM_WINDOW: ${TTUI_SHOULD_USE_WHOLE_TERM_WINDOW}"
+  [[ TTUI_SHOULD_USE_WHOLE_TERM_WINDOW == true ]] && ttui::save_terminal_screen
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+}
+
+
+ttui::handle_exit() {
+  
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  
+  echo "${FUNCNAME[0]} --> cleaning up before exit"
+  
+  # ttui::reset_color
+  echo "TTUI_SCROLL_AREA_CHANGED: ${TTUI_SCROLL_AREA_CHANGED}"
+  [[ $TTUI_SCROLL_AREA_CHANGED == true ]] && ttui::restore_scroll_area
+
+  echo "TTUI_SHOULD_USE_WHOLE_TERM_WINDOW: ${TTUI_SHOULD_USE_WHOLE_TERM_WINDOW}"
+  [[ $TTUI_SHOULD_USE_WHOLE_TERM_WINDOW == true ]] && ttui::restore_terminal_screen
+  
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+}
+
