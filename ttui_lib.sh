@@ -26,9 +26,14 @@
 # -----------------------------------------------------------------------------
 # Global Vars
 # -----------------------------------------------------------------------------
+readonly TIMESTAMP_AT_LAUNCH=`date +"%Y-%m-%d %T"`
+TTUI_THIS_IS_FIRST_LOG=true
+
 TTUI_DEBUG_LOGS_ENABLED=false
-TTUI_INVOKED_DEBUG_MSG="=========== invoked =========="
-TTUI_EXECUTION_COMPLETE_DEBUG_MSG="  --- execution complete ---"
+readonly TTUI_LOG_FILENAME="ttui_lib_log.txt"
+readonly TTUI_INVOKED_DEBUG_MSG="=========== invoked =========="
+readonly TTUI_EXECUTION_COMPLETE_DEBUG_MSG="  --- execution complete ---"
+
 TTUI_SHOULD_USE_WHOLE_TERM_WINDOW=false
 TTUI_SCROLL_AREA_CHANGED=false
 TTUI_OPERATING_SYSTEM=
@@ -40,27 +45,45 @@ TTUI_CURSOR_VISIBLE=true
 TTUI_LINE_WRAPPING_ENABLED=true
 TTUI_COLOR_RGB=()
 
+# wborder(local_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+# 	/* The parameters taken are 
+# 	 * 1. win: the window on which to operate
+# 	 * 2. ls: character to be used for the left side of the window 
+# 	 * 3. rs: character to be used for the right side of the window 
+# 	 * 4. ts: character to be used for the top side of the window 
+# 	 * 5. bs: character to be used for the bottom side of the window 
+# 	 * 6. tl: character to be used for the top left corner of the window 
+# 	 * 7. tr: character to be used for the top right corner of the window 
+# 	 * 8. bl: character to be used for the bottom left corner of the window 
+# 	 * 9. br: character to be used for the bottom right corner of the window
+# 	 */
+readonly TTUI_WBORDER_SINGLE_SQUARED_LIGHT=('│' '│' '─' '─' '┌' '┐' '└' '┘')
+readonly TTUI_WBORDER_SINGLE_SQUARED_HEAVY=()
+readonly TTUI_WBORDER_SINGLE_ROUNDED_LIGHT=()
+readonly TTUI_WBORDER_DOUBLE_SQUARED_LIGHT=()
+readonly TTUI_WBORDER_DOUBLE_SQUARED_HEAVY=()
+
 ## escape codes that can be strung together in a printf statement 
 ## for speed and brevity as an alternative to function calls
-TTUI_SAVE_TERMINAL_SCREEN='\e[?1049h'
-TTUI_RESTORE_TERMINAL_SCREEN='\e[?1049l'
-TTUI_RESET_TERMINAL_TO_DEFAULTS='\ec'
-TTUI_CLEAR_SCREEN_ENTIRELY='\e[2J'
-TTUI_DISABLE_LINE_WRAPPING='\e[?7l'
-TTUI_ENABLE_LINE_WRAPPING='\e[?7h'
-TTUI_RESTORE_SCROLL_AREA='\e[;r'
-TTUI_SCROLL_UP='\eM'
-TTUI_SCROLL_DOWN='\eD'
-TTUI_HIDE_CURSOR='\e[?25l'
-TTUI_SHOW_CURSOR='\e[?25h'
-TTUI_SAVE_CURSOR_POSITION='\e7'
-TTUI_RESTORE_CURSOR_POSITION='\e8'
-TTUI_MOVE_CURSOR_UP_ONE_LINE='\e[1A'
-TTUI_MOVE_CURSOR_DOWN_ONE_LINE='\e[1B'
-TTUI_MOVE_CURSOR_LEFT_ONE_COL='\e[1D'
-TTUI_MOVE_CURSOR_RIGHT_ONE_COL='\e[1C'
-TTUI_MOVE_CURSOR_TO_HOME_POSITION='\e[2J'
-TTUI_MOVE_CURSOR_TO_BOTTOM_LINE='\e[9999H'
+readonly TTUI_SAVE_TERMINAL_SCREEN='\e[?1049h'
+readonly TTUI_RESTORE_TERMINAL_SCREEN='\e[?1049l'
+readonly TTUI_RESET_TERMINAL_TO_DEFAULTS='\ec'
+readonly TTUI_CLEAR_SCREEN_ENTIRELY='\e[2J'
+readonly TTUI_DISABLE_LINE_WRAPPING='\e[?7l'
+readonly TTUI_ENABLE_LINE_WRAPPING='\e[?7h'
+readonly TTUI_RESTORE_SCROLL_AREA='\e[;r'
+readonly TTUI_SCROLL_UP='\eM'
+readonly TTUI_SCROLL_DOWN='\eD'
+readonly TTUI_HIDE_CURSOR='\e[?25l'
+readonly TTUI_SHOW_CURSOR='\e[?25h'
+readonly TTUI_SAVE_CURSOR_POSITION='\e7'
+readonly TTUI_RESTORE_CURSOR_POSITION='\e8'
+readonly TTUI_MOVE_CURSOR_UP_ONE_LINE='\e[1A'
+readonly TTUI_MOVE_CURSOR_DOWN_ONE_LINE='\e[1B'
+readonly TTUI_MOVE_CURSOR_LEFT_ONE_COL='\e[1D'
+readonly TTUI_MOVE_CURSOR_RIGHT_ONE_COL='\e[1C'
+readonly TTUI_MOVE_CURSOR_TO_HOME_POSITION='\e[2J'
+readonly TTUI_MOVE_CURSOR_TO_BOTTOM_LINE='\e[9999H'
 
 
 # -----------------------------------------------------------------------------
@@ -108,13 +131,25 @@ ttui::disable_debug_mode() {
 # -----------------------------------------------------------------------------
 ttui::debug_logger() {
   [[ "${TTUI_DEBUG_LOGS_ENABLED}" == false ]] && return
+  [[ "${TTUI_THIS_IS_FIRST_LOG}" == true ]] && {
+    echo " " >> "${TTUI_LOG_FILENAME}"
+    echo "-------------------------------------------------------------------------------" >> "${TTUI_LOG_FILENAME}"
+    echo "  LAUNCHED at   ${TIMESTAMP_AT_LAUNCH}" >> "${TTUI_LOG_FILENAME}"
+    echo "-------------------------------------------------------------------------------" >> "${TTUI_LOG_FILENAME}"
+    echo " " >> "${TTUI_LOG_FILENAME}"
+    TTUI_THIS_IS_FIRST_LOG=false
+    }
   local caller="${FUNCNAME[1]}"
   local self="${FUNCNAME[0]}"
   local message="$1"
   [[ "$#" == 0 ]] && message="no message argument provided to ${self}"
-  echo "[ ${caller} ]--> ${message}"
+  echo "[ ${caller} ]--> ${message}" >> "${TTUI_LOG_FILENAME}"
 }
 
+
+# ttui::log() {
+  
+# }
 
 # -----------------------------------------------------------------------------
 # Get the current operating system type
@@ -541,6 +576,8 @@ ttui::move_cursor_to() {
 ttui::move_cursor_up() {
   ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   # See: https://vt100.net/docs/vt510-rm/CUU.html
   # if no value passed, move up 1 line
   local num_lines_to_move=1
@@ -548,7 +585,7 @@ ttui::move_cursor_up() {
   # printf '\e[%sA' "${num_lines_to_move}"
   # Todo: validate arg is actually a valid number
   [[ $# -gt 0 ]] && num_lines_to_move=$1
-
+  ttui::debug_logger "moving up ${num_lines_to_move} lines"
   printf '\e[%sA' "${num_lines_to_move}"
   ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
@@ -564,6 +601,8 @@ ttui::move_cursor_up() {
 ttui::move_cursor_down() {
   ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   # See: https://vt100.net/docs/vt510-rm/CUD.html
   # if no value passed, move up 1 line
   # printf '\e[B'
@@ -572,7 +611,7 @@ ttui::move_cursor_down() {
   # printf '\e[%sB' "${num_lines_to_move}"
   # Todo: validate arg is actually a valid number
   [[ $# -gt 0 ]] && num_lines_to_move=$1
-  
+  ttui::debug_logger "moving down ${num_lines_to_move} lines"
   printf '\e[%sB' "${num_lines_to_move}"
   ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
@@ -588,6 +627,8 @@ ttui::move_cursor_down() {
 ttui::move_cursor_left() {
   ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   # See: https://vt100.net/docs/vt510-rm/CUB.html
   # if no value passed, move up 1 line
   # printf '\e[D'
@@ -596,7 +637,7 @@ ttui::move_cursor_left() {
   # printf '\e[%sD' "${num_columns_to_move}"
   # Todo: validate arg is actually a valid number
   [[ $# -gt 0 ]] && num_columns_to_move=$1
-  
+  ttui::debug_logger "moving left ${num_columns_to_move} columns"
   printf '\e[%sD' "${num_columns_to_move}"
   ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
@@ -612,6 +653,8 @@ ttui::move_cursor_left() {
 ttui::move_cursor_right() {
   ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
   # See: https://vt100.net/docs/vt510-rm/CUF.html
   # if no value passed, move up 1 line
   # printf '\e[C'
@@ -620,7 +663,7 @@ ttui::move_cursor_right() {
   # printf '\e[%sC' "${num_columns_to_move}"
   # Todo: validate arg is actually a valid number
   [[ $# -gt 0 ]] && num_columns_to_move=$1
-  
+  ttui::debug_logger "moving right ${num_columns_to_move} columns"
   printf '\e[%sC' "${num_columns_to_move}"
   ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
 }
@@ -655,6 +698,118 @@ ttui::move_cursor_to_home() {
   ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[2J'
 }
+
+
+ttui::draw_box() {
+  # width, height, upperLeftX, upperLeftY
+  ttui::debug_logger "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::debug_logger "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::debug_logger "args received: $expanded_args"
+
+  # wborder params
+  # 	0. ls: character to be used for the left side of the window 
+  # 	1. rs: character to be used for the right side of the window 
+  # 	2. ts: character to be used for the top side of the window 
+  # 	3. bs: character to be used for the bottom side of the window 
+  # 	4. tl: character to be used for the top left corner of the window 
+  # 	5. tr: character to be used for the top right corner of the window 
+  # 	6. bl: character to be used for the bottom left corner of the window 
+  # 	7. br: character to be used for the bottom right corner of the window
+  local width="$1"
+  ttui::debug_logger "width:  ${width}"
+  local height="$2"
+  ttui::debug_logger "height: ${height}"
+  local left_side=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[0]}
+  ttui::debug_logger "left_side:            ${left_side}"
+  local right_side=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[1]}
+  ttui::debug_logger "right_side:           ${right_side}"
+  local top_side=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[2]}
+  ttui::debug_logger "top_side:             ${top_side}"
+  local bottom_side=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[3]}
+  ttui::debug_logger "bottom_side:          ${bottom_side}"
+  local top_left_corner=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[4]}
+  ttui::debug_logger "top_left_corner:      ${top_left_corner}"
+  local top_right_corner=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[5]}
+  ttui::debug_logger "top_right_corner:     ${top_right_corner}"
+  local bottom_left_corner=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[6]}
+  ttui::debug_logger "bottom_left_corner:   ${bottom_left_corner}"
+  local bottom_right_corner=${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[7]}
+  ttui::debug_logger "bottom_right_corner:  ${bottom_right_corner}"
+  ttui::debug_logger "box sample:"
+  ttui::debug_logger "${top_left_corner}${top_side}${top_side}${top_side}${top_side}${top_side}${top_side}${top_right_corner}"
+  ttui::debug_logger "${left_side}      ${right_side}"
+  ttui::debug_logger "${left_side}      ${right_side}"
+  ttui::debug_logger "${bottom_left_corner}${bottom_side}${bottom_side}${bottom_side}${bottom_side}${bottom_side}${bottom_side}${bottom_right_corner}"
+
+
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[0]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[1]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[2]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[3]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[4]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[5]}
+  # echo ${TTUI_WBORDER_SINGLE_SQUARED_LIGHT[6]}
+
+  # printf '%s' "$1"
+  # echo
+  # printf '%s' "${top}"
+  # echo
+  # printf '~%.0s' {1..5}; printf '\n'
+  # printf "${top}"'%.0s' {1..10}
+  # local adjusted_width=$((width - 20))
+  # echo "adjusted_width: ${adjusted_width}"
+  # echo "-------------------- 20"
+
+  # print empty lines to make room
+  printf -vch  "%$((height))s" ""
+  printf "%s" "${ch// /n}"
+  ttui::move_cursor_up $((height - 1))
+
+  # top left corner
+  printf "${top_left_corner}"
+
+  # repeat top char width - 2 times (to account for corners)
+  printf -vch  "%$((width - 2))s" ""
+  printf "%s" "${ch// /$top}"
+  
+  # top right corner
+  printf "${top_right_corner}"
+
+  local height_counter=1
+
+  printf " ${height_counter}"
+
+  # left and right sides
+  for (( r=1; r<=height - 2; r++ )); do 
+    ttui::move_cursor_down
+    ttui::move_cursor_left $width
+    printf "${left_side}"
+    ttui::move_cursor_right $width
+    printf "${right_side}"
+    ((++height_counter))
+    printf " ${height_counter}"
+  done
+  
+  # bottom left corner
+  printf "${bottom_left_corner}"
+
+  # repeat bottom char width - 2 times (to account for corners)
+  printf -vch  "%$((width - 2))s" ""
+  printf "%s" "${ch// /$bottom}"
+  
+  # bottom right corner
+  printf "${bottom_right_corner}"
+  
+  ((++height_counter))
+  printf " ${height_counter}"
+
+  echo
+
+  ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+
+}
+
 
 
 # -----------------------------------------------------------------------------
@@ -1049,5 +1204,8 @@ ttui::handle_exit() {
   [[ $TTUI_SHOULD_USE_WHOLE_TERM_WINDOW == true ]] && ttui::restore_terminal_screen
   
   ttui::debug_logger "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+
+  local TIMESTAMP_AT_EXIT=`date +"%Y-%m-%d %T"`
+  ttui::debug_logger "Exiting at ${TIMESTAMP_AT_EXIT}"
 }
 
