@@ -760,18 +760,32 @@ ttui::draw_box() {
   # local adjusted_width=$((width - 20))
   # echo "adjusted_width: ${adjusted_width}"
   # echo "-------------------- 20"
+  count=0
+  # expand='{1..'"${height}"'}'
+  # rep=`printf '%.0s\n' "${expand}"`
+  # # print empty lines to make room
+  # eval $rep
+  # printf "${rep}"
 
-  # print empty lines to make room
-  printf -vch  "%$((height))s" ""
-  printf "%s" "${ch// /n}"
-  ttui::move_cursor_up $((height - 1))
+
+  for (( r=1; r<=height; r++ )); do 
+    ((count++))
+    # printf "${count} \n"
+    printf "\n"
+  done
+
+  # printf -vch  "%$((height))s" ""
+  # # printf "%s" "${ch// /n}"
+  # printf "%s" "/n"
+  echo
+  ttui::move_cursor_up $((height + 1))
 
   # top left corner
   printf "${top_left_corner}"
 
   # repeat top char width - 2 times (to account for corners)
   printf -vch  "%$((width - 2))s" ""
-  printf "%s" "${ch// /$top}"
+  printf "%s" "${ch// /$top_side}"
   
   # top right corner
   printf "${top_right_corner}"
@@ -783,20 +797,23 @@ ttui::draw_box() {
   # left and right sides
   for (( r=1; r<=height - 2; r++ )); do 
     ttui::move_cursor_down
-    ttui::move_cursor_left $width
+    ttui::move_cursor_left $((width + 2))
     printf "${left_side}"
-    ttui::move_cursor_right $width
+    ttui::move_cursor_right $((width - 2))
     printf "${right_side}"
     ((++height_counter))
     printf " ${height_counter}"
   done
   
+  ttui::move_cursor_down
+  ttui::move_cursor_left $((width + 2))
+
   # bottom left corner
   printf "${bottom_left_corner}"
 
   # repeat bottom char width - 2 times (to account for corners)
   printf -vch  "%$((width - 2))s" ""
-  printf "%s" "${ch// /$bottom}"
+  printf "%s" "${ch// /$bottom_side}"
   
   # bottom right corner
   printf "${bottom_right_corner}"
