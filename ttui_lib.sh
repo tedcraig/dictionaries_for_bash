@@ -400,7 +400,7 @@ ttui::scroll_down() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::hide_cursor() {
+ttui::cursor::hide() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?25l'
   TTUI_CURSOR_VISIBLE=false
@@ -414,7 +414,7 @@ ttui::hide_cursor() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::show_cursor() {
+ttui::cursor::show() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[?25h'
   TTUI_CURSOR_VISIBLE=true
@@ -429,7 +429,7 @@ ttui::show_cursor() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::save_cursor_position() {
+ttui::cursor::save_position() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   # This is more widely supported than '\e[s'.
   printf '\e7'
@@ -443,7 +443,7 @@ ttui::save_cursor_position() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::restore_cursor_position() {
+ttui::cursor::restore_position() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   # This is more widely supported than '\e[u'.
   printf '\e8'
@@ -458,7 +458,7 @@ ttui::restore_cursor_position() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::get_cursor_position() {
+ttui::cursor::get_position() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -549,7 +549,7 @@ ttui::get_cursor_position() {
 #   position 1: line number (positive int) or '-' (any non-digit char)
 #   position 2: column number (positive int) or '-' (any non-digit char)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_to() {
+ttui::cursor::move_to() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   ttui::logger::log "arg \$1: $1 | \$2: $2"
@@ -573,7 +573,7 @@ ttui::move_cursor_to() {
 # Arguments:
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_up() {
+ttui::cursor::move_up() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -598,7 +598,7 @@ ttui::move_cursor_up() {
 # Arguments:
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_down() {
+ttui::cursor::move_down() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -624,7 +624,7 @@ ttui::move_cursor_down() {
 # Arguments:
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_left() {
+ttui::cursor::move_left() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -650,7 +650,7 @@ ttui::move_cursor_left() {
 # Arguments:
 #   [position 1]: number of lines to move (positive int)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_right() {
+ttui::cursor::move_right() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -677,7 +677,7 @@ ttui::move_cursor_right() {
 #   position 1: line number (positive int) or '-' (any non-digit char)
 #   position 2: column number (positive int) or '-' (any non-digit char)
 # -----------------------------------------------------------------------------
-ttui::move_cursor_to_bottom() {
+ttui::cursor::move_to_bottom() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   # Using terminal size, move cursor to bottom.
   # printf '\e[%sH' "$LINES"
@@ -694,12 +694,19 @@ ttui::move_cursor_to_bottom() {
 # Arguments:
 #   none
 # -----------------------------------------------------------------------------
-ttui::move_cursor_to_home() {
+ttui::cursor::move_to_home() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   printf '\e[2J'
 }
 
 
+# -----------------------------------------------------------------------------
+# Draws box of specified width and height from specified upper left point
+# Globals:
+#   TBD
+# Arguments:
+#   TBD
+# -----------------------------------------------------------------------------
 ttui::draw_box() {
   # width, height, upperLeftX, upperLeftY
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
@@ -779,7 +786,7 @@ ttui::draw_box() {
   # # printf "%s" "${ch// /n}"
   # printf "%s" "/n"
   echo
-  ttui::move_cursor_up $((height + 1))
+  ttui::cursor::move_up $((height + 1))
 
   # top left corner
   printf "${top_left_corner}"
@@ -797,17 +804,17 @@ ttui::draw_box() {
 
   # left and right sides
   for (( r=1; r<=height - 2; r++ )); do 
-    ttui::move_cursor_down
-    ttui::move_cursor_left $((width + 2))
+    ttui::cursor::move_down
+    ttui::cursor::move_left $((width + 2))
     printf "${left_side}"
-    ttui::move_cursor_right $((width - 2))
+    ttui::cursor::move_right $((width - 2))
     printf "${right_side}"
     ((++height_counter))
     printf " ${height_counter}"
   done
   
-  ttui::move_cursor_down
-  ttui::move_cursor_left $((width + 2))
+  ttui::cursor::move_down
+  ttui::cursor::move_left $((width + 2))
 
   # bottom left corner
   printf "${bottom_left_corner}"
@@ -829,9 +836,66 @@ ttui::draw_box() {
 }
 
 
+# -----------------------------------------------------------------------------
+# Generates RGB color escape code string using the argument values supplied. 
+# If optional variable name argument is provided, resulting escape code will be 
+# assigned to variable matching the provided name.  
+# If optional variable name argument is not used then resulting escape code will
+# be assigned global variable TTUI_COLOR_RGB.
+# Globals:
+#   TTUI_COLOR_RGB
+# Arguments:
+#   position 1:  Red    value (0-255)
+#   position 2:  Blue   value (0-255)
+#   position 3:  Green  value (0-255)
+#  [position 4:] name of existing variable to which result should be assigned
+# -----------------------------------------------------------------------------
+ttui::color::get_escape_code_for_rgb() {
+  ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
+  ttui::logger::log "$# arguments received"
+  local expanded_args=$(echo "$@")
+  ttui::logger::log "args received: $expanded_args"
+
+  ##########  TODO:
+  ##########  check that args in position 1, 2, 3 are numbers 
+  ##########  and that they are within the legal range for RGB
+  ##########  values: 0-255
+  
+  local RED=$1
+  local GREEN=$2
+  local BLUE=$3
+  
+  # assign escape code string ---------------------------------------------------
+  #   if option fourth arg exists, then try to assign values to variable of the same name
+  #   else assign values to default global variable
+  if [[ $# -gt 3 ]]; then
+    ttui::logger::log "4th arg found: $4"
+    # check if the string value of myVar is the name of a declared variable
+    local varName="$4"
+    # myVar='$'"$4"
+    local bVarExists=false
+    local test='if ${'"${varName}"'+"false"}; then ttui::logger::log "${varName} not defined"; else bVarExists=true; ttui::logger::log "${varName} is defined"; fi'
+    ttui::logger::log "test: $test"
+    eval $test
+    ttui::logger::log  "bVarExists: ${bVarExists}"
+
+    if [[ $bVarExists == true ]]; then
+      local assignment="${varName}"'="\033[38;2;${RED};${GREEN};${BLUE}m"'
+      ttui::logger::log  "assignment: ${assignment}"
+      eval $assignment
+    else
+      echo "${FUNCNAME[0]} --> warning: cannot assign RGB color escape code to ${varName}: undelcared variable"
+    fi
+  else
+    ttui::logger::log "no var name provided. Assigning RGB color escape code to TTUI_COLOR_RGB_FROM_LCH"
+    TTUI_COLOR_RGB='\033[38;2;'"${RED};${GREEN};${BLUE}"'m'
+  fi
+  ttui::logger::log "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+}
+
 
 # -----------------------------------------------------------------------------
-# Converts LCH color values to RGB values. 
+# Converts LCH color values to RGB values. *** SLOW !!! ***
 # If optional variable name argument is provided, resulting RGB values will be 
 # assigned as an array (R,G,B) to variable matching the provided name.  If 
 # optional variable name argument is not used then resulting RGB value will be
@@ -844,7 +908,7 @@ ttui::draw_box() {
 #   position 3:  LCH hue       value (0-360)
 #  [position 4:] name of existing variable to which result should be assigned
 # -----------------------------------------------------------------------------
-ttui::get_color_rgb_from_lch() {
+ttui::color::get_rgb_from_lch() {
   # color conversion equations from:
   # avisek/colorConversions.js
   # https://gist.github.com/avisek/eadfbe7a7a169b1001a2d3affc21052e
@@ -1084,60 +1148,15 @@ ttui::get_color_rgb_from_lch() {
 
 
 # -----------------------------------------------------------------------------
-# Generates RGB color escape code string using the argument values supplied. 
-# If optional variable name argument is provided, resulting escape code will be 
-# assigned to variable matching the provided name.  
-# If optional variable name argument is not used then resulting escape code will
-# be assigned global variable TTUI_COLOR_RGB.
+# Sets active color to terminal default.
 # Globals:
-#   TTUI_COLOR_RGB
+#   none
 # Arguments:
-#   position 1:  Red    value (0-255)
-#   position 2:  Blue   value (0-255)
-#   position 3:  Green  value (0-255)
-#  [position 4:] name of existing variable to which result should be assigned
+#   none
 # -----------------------------------------------------------------------------
-ttui::get_color_escape_code_rgb() {
+ttui::color::reset() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
-  ttui::logger::log "$# arguments received"
-  local expanded_args=$(echo "$@")
-  ttui::logger::log "args received: $expanded_args"
-
-  ##########  TODO:
-  ##########  check that args in position 1, 2, 3 are numbers 
-  ##########  and that they are within the legal range for RGB
-  ##########  values: 0-255
-  
-  local RED=$1
-  local GREEN=$2
-  local BLUE=$3
-  
-  # assign escape code string ---------------------------------------------------
-  #   if option fourth arg exists, then try to assign values to variable of the same name
-  #   else assign values to default global variable
-  if [[ $# -gt 3 ]]; then
-    ttui::logger::log "4th arg found: $4"
-    # check if the string value of myVar is the name of a declared variable
-    local varName="$4"
-    # myVar='$'"$4"
-    local bVarExists=false
-    local test='if ${'"${varName}"'+"false"}; then ttui::logger::log "${varName} not defined"; else bVarExists=true; ttui::logger::log "${varName} is defined"; fi'
-    ttui::logger::log "test: $test"
-    eval $test
-    ttui::logger::log  "bVarExists: ${bVarExists}"
-
-    if [[ $bVarExists == true ]]; then
-      local assignment="${varName}"'="\033[38;2;${RED};${GREEN};${BLUE}m"'
-      ttui::logger::log  "assignment: ${assignment}"
-      eval $assignment
-    else
-      echo "${FUNCNAME[0]} --> warning: cannot assign RGB color escape code to ${varName}: undelcared variable"
-    fi
-  else
-    ttui::logger::log "no var name provided. Assigning RGB color escape code to TTUI_COLOR_RGB_FROM_LCH"
-    TTUI_COLOR_RGB='\033[38;2;'"${RED};${GREEN};${BLUE}"'m'
-  fi
-  ttui::logger::log "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
+  printf "\033[0m"
 }
 
 
@@ -1151,7 +1170,7 @@ ttui::get_color_escape_code_rgb() {
 #   position 2:  Blue   value (0-255)
 #   position 3:  Green  value (0-255)
 # -----------------------------------------------------------------------------
-ttui::set_color_rgb() {
+ttui::color::set_color_to_rgb() {
   ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
   ttui::logger::log "$# arguments received"
   local expanded_args=$(echo "$@")
@@ -1169,19 +1188,6 @@ ttui::set_color_rgb() {
   printf "\033[38;2;%d;%d;%dm" ${RED} ${GREEN} ${BLUE};
 
   ttui::logger::log "${TTUI_EXECUTION_COMPLETE_DEBUG_MSG}"
-}
-
-
-# -----------------------------------------------------------------------------
-# Sets color to terminal default.
-# Globals:
-#   none
-# Arguments:
-#   none
-# -----------------------------------------------------------------------------
-ttui::reset_color() {
-  ttui::logger::log "${TTUI_INVOKED_DEBUG_MSG}"
-  printf "\033[0m"
 }
 
 
@@ -1214,7 +1220,7 @@ ttui::handle_exit() {
   
   echo "${FUNCNAME[0]} --> cleaning up before exit"
   
-  # ttui::reset_color
+  # ttui::color::reset
   echo "TTUI_SCROLL_AREA_CHANGED: ${TTUI_SCROLL_AREA_CHANGED}"
   [[ $TTUI_SCROLL_AREA_CHANGED == true ]] && ttui::restore_scroll_area
 
