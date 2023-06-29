@@ -1,47 +1,57 @@
-#! /usr/bin/env zsh
+#! /usr/bin/env bash
 
-# ******************************************************************************
-# name:     volume
-# author:   ted craig
-# ------------------------------------------------------------------------------
-# Description: 
-# Adjusts the volume settings on MacOs. 
-# ------------------------------------------------------------------------------
-# License:
-# The Unlicense
+# =============================================================================
 #
-# This is free and unencumbered software released into the public domain.
-# 
-# Anyone is free to copy, modify, publish, use, compile, sell, or
-# distribute this software, either in source code form or as a compiled
-# binary, for any purpose, commercial or non-commercial, and by any
-# means.
-# 
-# In jurisdictions that recognize copyright laws, the author or authors
-# of this software dedicate any and all copyright interest in the
-# software to the public domain. We make this dedication for the benefit
-# of the public at large and to the detriment of our heirs and
-# successors. We intend this dedication to be an overt act of
-# relinquishment in perpetuity of all present and future rights to this
-# software under copyright law.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-# 
-# For more information, please refer to <https://unlicense.org>
-# ******************************************************************************
+#   name:   volume
+#   auth:   ted craig
+#
+#   desc:   Adjusts the volume settings on MacOs.
+#
+#   dependancies: ttui_lib.sh
+#
+# =============================================================================
 
-# Set the output volume to 50%
-# § sudo osascript -e 'set volume output volume 50 Input volume and Alert volume can also be set from 0 to 100%:
-# $ sudo osascript -e 'set volume input volume 40°
-# $ sudo osascript -e 'set volume alert volume 75'
+# -----------------------------------------------------------------------------
+# Global Vars
+# -----------------------------------------------------------------------------
+readonly FULL_PATH_TO_SCRIPT="$(which "$0")"
+readonly PATH_TO_SCRIPT="$(dirname "$0")"
+readonly BASENAME="$(basename "$0")"
 
-# EDITED_PATH="$(perl -e 'print join(":", grep { not $seen{$_}++ } split(/:/, $ENV{PATH}))')"
-EDITED_PATH=$(printf %s "$PATH" \
-     | awk -vRS=: -vORS= '!a[$0]++ {if (NR>1) printf(":"); printf("%s", $0) }' )
-echo $EDITED_PATH
+
+# -----------------------------------------------------------------------------
+# Imports
+# -----------------------------------------------------------------------------
+# source "${PATH_TO_SCRIPT}"'/ttui_lib.sh'
+source /opt/ttui/ttui_lib.sh
+
+main() {
+  
+  # echo "${FULL_PATH_TO_SCRIPT}"
+  # echo "basename \$0: $(basename "$0")"
+  # echo "dirname \$0: $(dirname "$0")"
+
+  [[ $# -lt 1 ]] && {
+    echo "Usage: "
+    echo "  volume [0-100]"
+    echo "  sets system volume to specified percentage"
+    exit 0
+  }
+
+  if (( $1 >= 0 )) && (( $1 <= 100 )); then
+    # osascript examples:
+    #   Set the output volume to 50%
+    #     sudo osascript -e 'set volume output volume 50'
+    #   Input volume and Alert volume can also be set from 0 to 100%:
+    #     sudo osascript -e 'set volume input volume 40'
+    #     sudo osascript -e 'set volume alert volume 75'
+    osascript -e "set volume output volume $1"
+  else
+    echo "invalid arg '$1': must be integer in range 0 thru 100"
+  fi  
+  
+
+}
+
+
+main "$@"
