@@ -25,31 +25,62 @@ readonly BASENAME="$(basename "$0")"
 # source "${PATH_TO_SCRIPT}"'/ttui_lib.sh'
 source /opt/ttui/ttui_lib.sh
 
+show_usage() {
+  echo "Usage: "
+  echo "  volume [0-100]"
+  echo "  sets system volume to specified percentage"
+  exit 0
+}
+
+draw_volume_bar() {
+  # make room for the graph
+  echo
+  echo
+  echo
+  # draw bar
+  ttui::cursor::move_to_bottom
+  ttui::cursor::move_up 2
+  ttui::cursor::move_right
+  local count=$1
+  while (( count > 1 )); do
+    printf "${TTUI_HBAR_8}"
+    (( count=count-2 ))
+  done
+  printf "\n"
+  # draw window
+  ttui::cursor::move_up 2
+  ttui::draw_box 52 3
+}
+
 main() {
   
   # echo "${FULL_PATH_TO_SCRIPT}"
   # echo "basename \$0: $(basename "$0")"
   # echo "dirname \$0: $(dirname "$0")"
 
-  [[ $# -lt 1 ]] && {
-    echo "Usage: "
-    echo "  volume [0-100]"
-    echo "  sets system volume to specified percentage"
-    exit 0
-  }
+  [[ $# -lt 1 ]] && show_usage
 
-  if (( $1 >= 0 )) && (( $1 <= 100 )); then
+  local volume=$1
+
+  if (( volume >= 0 )) && (( volume <= 100 )); then
     # osascript examples:
     #   Set the output volume to 50%
     #     sudo osascript -e 'set volume output volume 50'
     #   Input volume and Alert volume can also be set from 0 to 100%:
     #     sudo osascript -e 'set volume input volume 40'
     #     sudo osascript -e 'set volume alert volume 75'
-    osascript -e "set volume output volume $1"
+    osascript -e "set volume output volume ${volume}"
+    # draw bar representing volume % using ttui library
+    draw_volume_bar "${volume}"
+    # print description
+    local vol_description="error"
+    [[ $1 == 0 ]] && vol_description="muted" || vol_description="set to ${volume}%"
+    echo " volume ${vol_description}"
   else
-    echo "invalid arg '$1': must be integer in range 0 thru 100"
+    echo "invalid arg '${volume}': must be integer in range 0 thru 100"
   fi  
   
+
 
 }
 
