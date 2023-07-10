@@ -11,8 +11,8 @@ create_hashmap() {
     local this=$1
     local class="Hashmap"
     
-    eval "${this}_keys=()"
-    eval "${this}_values=()"
+    eval "${this}_KEYS=()"
+    eval "${this}_VALUES=()"
     
     for method in $(compgen -A function "${class}_")
     do
@@ -45,15 +45,15 @@ Hashmap_add() {
     for kv_pair in $@; do
         local KEY=${kv_pair%=*}
         local VAL=${kv_pair#*=}
-        eval 'local INDEX=${#'"$this"'_keys[@]}'
+        eval 'local INDEX=${#'"$this"'_KEYS[@]}'
 
         echo "KEY: $KEY | VAL: $VAL | INDEX: $INDEX"
         
-        local prep="${this}"'_keys['"${INDEX}"']="${KEY}"'
+        local prep="${this}"'_KEYS['"${INDEX}"']="${KEY}"'
         # echo "$prep"
         eval $prep
         
-        prep="${this}"'_values['"${INDEX}"']="${VAL}"'
+        prep="${this}"'_VALUES['"${INDEX}"']="${VAL}"'
         # echo "$prep"
         eval $prep
         
