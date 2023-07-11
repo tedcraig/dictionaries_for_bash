@@ -1,5 +1,19 @@
 #! /usr/bin/env bash
 
+# =============================================================================
+#
+#   name:   Hashmap.sh
+#   auth:   ted craig
+#
+#   desc:   Provides hacky, hashmap/dictionary-like data "object" for bash v3
+#           (or other bash versions that do not support associative arrays).
+#
+#   note:   Developed and tested on MacOs Ventura using bash v3.2.57(1)-release
+#
+#   dependancies: ttui_lib.sh
+#
+# =============================================================================
+
 # hashmap experiments
 create_hashmap() {
     [[ $# -lt 1 ]] && {
@@ -7,7 +21,7 @@ create_hashmap() {
         exit 1
     }
     
-    # setup infrastructure for this hashmap instance
+    ## setup infrastructure for this hashmap instance
     local this=$1
     local class="Hashmap"
     
@@ -15,15 +29,17 @@ create_hashmap() {
     eval "${this}_VALUES=()"
     eval "${this}_AVAILABLE_INDEXES=(0)"
     
+    ## create "alias" function for each class function using
+    ## naming convention:  instanceName::methodName
     for method in $(compgen -A function "${class}_")
     do
-      echo "$method in loop";
+      # echo "$method in loop";
       local prep="${method/#$class\_/$this::}() { ${method} ${this} "'$@'"; }"
-      echo $prep
+      # echo $prep
       eval $prep
     done
     
-    # handle any key/value pairs passed to us
+    ## handle any key/value pairs passed to us
     shift # remove instance name arg
     [[ $# -lt 1 ]] && {
         # no key/value pairs, so break out of this function
@@ -183,55 +199,3 @@ other_func() {
     # echo ${FUNCNAME[0]} invoked
     echo "one two three"
 }
-
-create_hashmap hmOne
-
-echo
-echo "adding age and name to hmOne"
-hmOne::add age=48
-hmOne::add name=djthadius
-
-echo
-echo "get..."
-echo "assign to age"
-age=$(hmOne::get age)
-echo "age: $age"
-echo "assign to name"
-name=$(hmOne::get name)
-echo "name: $name"
-arr=($(other_func))
-echo "arr length: ${#arr[@]}"
-echo "arr: ${arr[@]}"
-echo
-echo "listing pairs..."
-hmOne::list
-echo
-echo "deleting name ..."
-hmOne::delete "name"
-echo
-echo "listing pairs..."
-hmOne::list
-echo
-echo
-echo "hashmap two ..."
-create_hashmap hmTwo name=Ted age=old
-echo
-hmTwo::get age
-hmTwo::get name
-echo
-age=$(hmTwo::get age)
-echo "age: $age"
-name=$(hmTwo::get name)
-echo "name: $name"
-echo "listing pairs..."
-hmTwo::list
-echo
-echo
-echo "function list:"
-compgen -A function
-echo
-echo "hmOne variable list:"
-compgen -A variable hmOne_
-echo
-echo "hmTwo variable list:"
-compgen -A variable hmTwo_
