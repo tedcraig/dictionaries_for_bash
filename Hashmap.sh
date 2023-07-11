@@ -116,7 +116,68 @@ Hashmap_get() {
 Hashmap_delete() {
     echo "${FUNCNAME[0]} invoked"
     echo "args: $@"
+    local this=$1
+    local KEY=$2
+    eval 'local KEYS_LENGTH=${#'"${this}"'_KEYS[@]}'
+    eval 'local VALS_LENGTH=${#'"${this}"'_VALUES[@]}'
+    eval 'local IDXS_LENGTH=${#'"${this}"'_AVAILABLE_INDEXES[@]}'
+    local prep='local var="${'"${this}"'_KEY_'"${KEY}"'}"'
+    # echo $prep
+    eval "$prep"
+    # echo "var: ${var}"
+    [[ -z  ${var} ]] && {
+        echo "${FUNCNAME[0]}: Unable to delete $this hashmap entry. Unknown key: $KEY"
+        exit 1
+    }
+    prep='local INDEX=${'"${this}_KEY_${KEY}"'}'
+    echo $prep
+    eval $prep
+    echo "INDEX: ${INDEX}"
+    if [[ INDEX == 0 ]] && [[ KEYS_LENGTH == 1 ]] && [[ VALS_LENGTH == 1 ]]; then
+        # this is the only element in the AVAILABLE_INDEXES array so just skip this step
+        break
+    elif (( INDEX == KEYS_LENGTH - 1 )) && (( INDEX == VALS_LENGTH - 1 )); then
+        # this is not the only element in the AVAILABLE_INDEXES array 
+        # so just add it as the last available index
+        eval "${this}"'_AVAILABLE_INDEXES=( "${'"${this}"'_AVAILABLE_INDEXES[@]}" "${'"${INDEX}"'}" )'
+    else
+        # this is not the last element so insert it before the last element of the AVAILABLE_INDEXES array
+        prep="${this}"'_AVAILABLE_INDEXES=( ${'"${this}"'_AVAILABLE_INDEXES[@]:0:'"$((IDXS_LENGTH - 2))"'} '"${INDEX}"' ${'"${this}"'_AVAILABLE_INDEXES[@]:'"$((IDXS_LENGTH - 2))"'} )'
+        echo $prep
+        eval $prep
+    fi
+
+    # "remove" key corresponding to this index
+    prep="${this}"'_KEYS['"${INDEX}"']=deleted_from_'"${this}"
+    # echo "$prep"
+    eval $prep
+    
+    # "remove" the value corresponding to this key
+    prep="${this}"'_VALUES['"${INDEX}"']=deleted_from_'"${this}"
+    # echo "$prep"
+    eval $prep
+    
+    # remove the index pointer
+    prep='unset '"${this}"'_KEY_'"${KEY}"
+    # echo "$prep"
+    eval $prep
+
+    eval 'echo "${this}_KEYS: ${'"${this}"'_KEYS[@]}"'
+    eval 'echo "${this}_VALUES: ${'"${this}"'_VALUES[@]}"'
+    eval 'echo "${this}_AVAILABLE_INDEXES: ${'"${this}"'_AVAILABLE_INDEXES[@]}"'
 }
+
+Hashmap_list() {
+    this=$1
+    echo -n "$this:"
+    eval 'local KEYS_LENGTH=${#'"${this}"'_KEYS[@]}'
+    for (( INDEX=0; INDEX < KEYS_LENGTH; INDEX++ )); do
+        eval 'echo -n " ${'"${this}"'_KEYS['"${INDEX}"']}=${'"${this}"'_VALUES['"${INDEX}"']}"'
+    done;
+    echo
+}
+
+
 
 other_func() {
     # echo ${FUNCNAME[0]} invoked
@@ -142,7 +203,14 @@ arr=($(other_func))
 echo "arr length: ${#arr[@]}"
 echo "arr: ${arr[@]}"
 echo
-hmOne::delete "key"
+echo "listing pairs..."
+hmOne::list
+echo
+echo "deleting name ..."
+hmOne::delete "name"
+echo
+echo "listing pairs..."
+hmOne::list
 echo
 echo
 echo "hashmap two ..."
@@ -155,7 +223,9 @@ age=$(hmTwo::get age)
 echo "age: $age"
 name=$(hmTwo::get name)
 echo "name: $name"
-
+echo "listing pairs..."
+hmTwo::list
+echo
 echo
 echo "function list:"
 compgen -A function
