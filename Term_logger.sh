@@ -41,9 +41,10 @@ tlog::title_box() {
   # echo "num args: ${#args[@]}"
 
   local _TITLE=
-  local _TITLE_COLOR=none
-  local _BOX_COLOR=none
-  local _BOX_WIDTH=none
+  local _TITLE_COLOR="none"
+  local _TITLE_JUSTIFICATION="centered"
+  local _BOX_COLOR="none"
+  local _BOX_WIDTH="none"
   local _BOX_HEIGHT=3
   local _PAD_HORIZONTAL=1
   local _PAD_VERTICAL=0
@@ -68,6 +69,16 @@ tlog::title_box() {
                 # echo "title_color: ${_VAL}"
                 local _RGB_COLOR=${_VAL//,/' '}
                 _TITLE_COLOR="${_RGB_COLOR}"
+                ;;
+            title_justification) 
+                # echo "title_color: ${_VAL}"
+                local _JUST="${_VAL}"
+                if [[ $_JUST == "centered" ]] || [[ $_JUST == "left" ]] || [[ $_JUST == "right" ]]; then
+                    _TITLE_JUSTIFICATION="${_JUST}"
+                else  
+                    echo "${FUNCNAME[0]}: unknown title justification value: ${_JUST}"
+                    continue
+                fi
                 ;;
             box_color)
                 local _RGB_COLOR=${_VAL//,/' '}
@@ -118,36 +129,54 @@ tlog::title_box() {
 
   ## if box_color = none, then skip setting a color
 
-  # echo "title:          ${_TITLE}"
-  # echo "title_color:    ${_TITLE_COLOR}"
-  # echo "box_color:      ${_BOX_COLOR}"
-  # echo "box_width:      ${_BOX_WIDTH}"
-  echo "box_height:     ${_BOX_HEIGHT}"
-  # echo "pad_horizontal: ${_PAD_HORIZONTAL}"
-  # echo "pad_vertical:   ${_PAD_VERTICAL}"
-  echo "box height / 2: $(( (_BOX_HEIGHT / 2) + 1))"
+  ## determine horizontal placement for title text. Assign left starting point to _LEFT_PAD
+  local _TITLE_LENGTH=${#_TITLE}
+  local _LEFT_PAD=
+  case ${_TITLE_JUSTIFICATION} in
+      "centered") 
+          _LEFT_PAD=$(( (_BOX_WIDTH - _TITLE_LENGTH) / 2 ))
+          ;;
+      "left") 
+          _LEFT_PAD=$(( _PAD_HORIZONTAL + 1 ))
+          ;;
+      "right") 
+          _LEFT_PAD=$(( _BOX_WIDTH - _PAD_HORIZONTAL - 1 - _TITLE_LENGTH ))
+          ;;
+      *) echo 
+          "Error: unknown title_justification value: ${_TITLE_JUSTIFICATION}"
+          ;;
+  esac
 
-  ## print the vertical padding
+  # echo "title:                ${_TITLE}"
+  # echo "title length:         ${_TITLE_LENGTH}"
+  # echo "title_color:          ${_TITLE_COLOR}"
+  # echo "title_justification:  ${_TITLE_JUSTIFICATION}"
+  # echo "left pad:             ${_LEFT_PAD}"
+  # echo "box_color:            ${_BOX_COLOR}"
+  # echo "box_width:            ${_BOX_WIDTH}"
+  # echo "box_height:           ${_BOX_HEIGHT}"
+  # echo "pad_horizontal:       ${_PAD_HORIZONTAL}"
+  # echo "pad_vertical:         ${_PAD_VERTICAL}"
+  # echo "box height / 2: $(( (_BOX_HEIGHT / 2) + 1))"
+
+  ## print empty lines covering the vertical height of the box
   for ((i=0; i < _BOX_HEIGHT; i++)); do
     echo
   done
-  
   ## move cursor to the middle in prep for printing title
   ttui::cursor::move_up $(( (_BOX_HEIGHT / 2) + 1 ))
-  ## print left horizontal pad
-  printf -vch  "%$((_PAD_HORIZONTAL + 1))s" ""
-  printf "%s" "${ch// / }"
+  ## move cursor right by amount appropriate for specified justification
+  ttui::cursor::move_right $_LEFT_PAD
   ## print the title
   ttui::color::set_color_to_rgb ${_TITLE_COLOR}
   printf "%s" "${_TITLE}"
-  ## print right horizontal pad
-  printf -vch  "%$((_PAD_HORIZONTAL + 1))s" ""
-  printf "%s" "${ch// / }"
+  ## move cursor into position to draw box
   ttui::cursor::move_to_bottom
   ttui::cursor::move_left 999
   ttui::cursor::move_up ${_BOX_HEIGHT}
+  ## draw box
   ttui::color::set_color_to_rgb ${_BOX_COLOR}
   ttui::draw_box ${_BOX_WIDTH} ${_BOX_HEIGHT}
-  # ttui::cursor::move_to_bottom
+  ## reset color
   ttui::color::reset
 }
