@@ -122,9 +122,10 @@ tlog::title_box() {
   # echo "title_color:    ${_TITLE_COLOR}"
   # echo "box_color:      ${_BOX_COLOR}"
   # echo "box_width:      ${_BOX_WIDTH}"
-  # echo "box_height:     ${_BOX_HEIGHT}"
+  echo "box_height:     ${_BOX_HEIGHT}"
   # echo "pad_horizontal: ${_PAD_HORIZONTAL}"
   # echo "pad_vertical:   ${_PAD_VERTICAL}"
+  echo "box height / 2: $(( (_BOX_HEIGHT / 2) + 1))"
 
   ## print the vertical padding
   for ((i=0; i < _BOX_HEIGHT; i++)); do
@@ -132,7 +133,7 @@ tlog::title_box() {
   done
   
   ## move cursor to the middle in prep for printing title
-  ttui::cursor::move_up $((_PAD_VERTICAL + 2))
+  ttui::cursor::move_up $(( (_BOX_HEIGHT / 2) + 1 ))
   ## print left horizontal pad
   printf -vch  "%$((_PAD_HORIZONTAL + 1))s" ""
   printf "%s" "${ch// / }"
