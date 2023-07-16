@@ -28,9 +28,15 @@
 # Box size may be specified.
 # Globals:
 #   TBD
-# Arguments:
-#   position 1: title string
-#   position 2: bottom line number (positive int) inclusive
+# Arguments: (in any order)
+#   title=title_string_using_underscores_in_place_of_spaces
+#   title_color=r,g,b
+#   title_justification=centered|left|right
+#   box_color=r,g,b
+#   box_width=width
+#   box_height=height
+#   pad_vertical=verticalPaddingValue
+#   pas_horizontal=horizontalPaddingValue
 # -----------------------------------------------------------------------------
 ##  Creates a box surrounding text
 ##  box color and text color may be specified
@@ -41,14 +47,15 @@ tlog::title_box() {
   # echo "num args: ${#args[@]}"
 
   local _TITLE=
+  local _TITLE_LENGTH=
   local _TITLE_COLOR="none"
   local _TITLE_JUSTIFICATION="centered"
+  local _TITLE_START_COL=
   local _BOX_COLOR="none"
   local _BOX_WIDTH="none"
   local _BOX_HEIGHT=3
   local _PAD_HORIZONTAL=1
   local _PAD_VERTICAL=0
-
   local _PROP=
   local _VAL=
 
@@ -64,6 +71,7 @@ tlog::title_box() {
                 # echo "title: ${_VAL_W_SPACES}"
                 local _VAL_WITH_SPACES=${_VAL//_/' '} # swap all underscores with spaces
                 _TITLE="${_VAL_WITH_SPACES}"
+                _TITLE_LENGTH="${#_TITLE}"
                 ;;
             title_color) 
                 # echo "title_color: ${_VAL}"
@@ -105,10 +113,6 @@ tlog::title_box() {
                 ;;
     esac
   done
-
-  ## if box_width = none, then fit the box to the width of the title
-  local title_length=${#_TITLE}
-  # echo "title_length: $title_length"
   
   local box_pad_horizontal=$((_PAD_HORIZONTAL + _PAD_HORIZONTAL + 2))
   local box_pad_vertical=$((_PAD_VERTICAL + _PAD_VERTICAL + 2))
@@ -125,22 +129,20 @@ tlog::title_box() {
     _BOX_HEIGHT=$(( 1 + box_pad_vertical ))
   fi
 
-  ## if title_color = none, then skip setting a color
-
-  ## if box_color = none, then skip setting a color
-
-  ## determine horizontal placement for title text. Assign left starting point to _LEFT_PAD
-  local _TITLE_LENGTH=${#_TITLE}
-  local _LEFT_PAD=
+  ## Determine horizontal placement for title text. Assign left starting point
+  ## to _TITLE_START_COL.
+  ##
+  ## NOTE:  We do this here because box width, title length, and horizontal pad
+  ## need to be populated in order for this calculation to be processed.
   case ${_TITLE_JUSTIFICATION} in
       "centered") 
-          _LEFT_PAD=$(( (_BOX_WIDTH - _TITLE_LENGTH) / 2 ))
+          _TITLE_START_COL=$(( (_BOX_WIDTH - _TITLE_LENGTH) / 2 ))
           ;;
       "left") 
-          _LEFT_PAD=$(( _PAD_HORIZONTAL + 1 ))
+          _TITLE_START_COL=$(( _PAD_HORIZONTAL + 1 ))
           ;;
       "right") 
-          _LEFT_PAD=$(( _BOX_WIDTH - _PAD_HORIZONTAL - 1 - _TITLE_LENGTH ))
+          _TITLE_START_COL=$(( _BOX_WIDTH - _PAD_HORIZONTAL - 1 - _TITLE_LENGTH ))
           ;;
       *) echo 
           "Error: unknown title_justification value: ${_TITLE_JUSTIFICATION}"
@@ -166,7 +168,7 @@ tlog::title_box() {
   ## move cursor to the middle in prep for printing title
   ttui::cursor::move_up $(( (_BOX_HEIGHT / 2) + 1 ))
   ## move cursor right by amount appropriate for specified justification
-  ttui::cursor::move_right $_LEFT_PAD
+  ttui::cursor::move_right ${_TITLE_START_COL}
   ## print the title
   ttui::color::set_color_to_rgb ${_TITLE_COLOR}
   printf "%s" "${_TITLE}"
