@@ -31,18 +31,19 @@ source ./Term_logger.sh
 RED="255 50 50"
 GREEN="50 196 50"
 BLUE="50 50 196"
-GREY="128 128 128"
+GREY="114 114 114"
 YELLOW="255 204 110"
 GOLD="200 150 0"
 GOLD2="173 156 123"
-WHITE="200 200 200"
+WHITE="212 212 212"
 
 TITLE_COLOR=${RED// /,} # substitue , for spaces
 
 # title_color=50,180,170 box_color=50,120,110
 
 DESC="${WHITE}"
-RESULT="${GREY}"
+RESULT="${GOLD2}"
+DEBUG="${GREY}"
 
 TITLE_BOX_DEFAULTS="title_color=255,50,50 \
                 box_color=160,50,50 \
@@ -60,30 +61,37 @@ create_hashmap_one() {
   tlog::title_box title=HASHMAP_ONE $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "create_hashmap hmOne"
+  echo "Hashmap::create hmOne"
+  ttui::color::set_color_to_rgb "${DEBUG}"
+  Hashmap::create hmOne
   ttui::color::reset
-  create_hashmap hmOne
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "adding age and name to hmOne"
-  ttui::color::set_color_to_rgb "${RESULT}"
+  echo "hmOne::add age=48"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   hmOne::add age=48
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::add name=djthadius"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   hmOne::add name=djthadius
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "hmOne::get age -> assign to AGE"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   AGE=$(hmOne::get age)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "AGE: $AGE"
   echo
   ttui::color::set_color_to_rgb "${DESC}"
   echo "hmOne::get name --> assign to NAME"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   NAME=$(hmOne::get name)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "NAME: $NAME"
+  ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
@@ -97,6 +105,7 @@ create_hashmap_one() {
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "hmOne::add id=12345"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   hmOne::add id=12345
   ttui::color::reset
   echo
@@ -110,6 +119,7 @@ create_hashmap_one() {
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "hmOne::delete name"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   hmOne::delete "name"
   ttui::color::reset
   echo
@@ -130,6 +140,7 @@ create_hashmap_one() {
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "hmOne::add car=lotus"
+  ttui::color::set_color_to_rgb "${DEBUG}"
   hmOne::add car=lotus
   ttui::color::reset
   echo
@@ -148,6 +159,13 @@ create_hashmap_one() {
   ttui::color::reset
   echo
 
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::list_resources"
+  ttui::color::set_color_to_rgb "${RESULT}"
+  hmOne::list_resources
+  ttui::color::reset
+  echo
+
 }
 
 
@@ -159,8 +177,8 @@ create_hashmap_two() {
   tlog::title_box title=HASHMAP_TWO $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "create_hashmap hmTwo name=Ted age=old"
-  create_hashmap hmTwo name=Ted age=old
+  echo "Hashmap::create hmTwo name=Ted age=old"
+  Hashmap::create hmTwo name=Ted age=old
   ttui::color::reset
   echo
 
@@ -232,6 +250,15 @@ show_functions_and_variables() {
 }
 
 
+test_print_array() {
+
+  echo "Print Array test:"
+  test_array=(joe blow rogan)
+  Hashmap::print_array test_array
+
+}
+
+
 # -----------------------------------------------------------------------------
 #   test title box
 # -----------------------------------------------------------------------------
@@ -270,9 +297,13 @@ test_title_box() {
 # -----------------------------------------------------------------------------
 main() {
 
+  # test_print_array  
+
   create_hashmap_one
 
-  create_hashmap_two
+  # create_hashmap_two
+
+  
 
   # show_functions_and_variables
 
