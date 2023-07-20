@@ -15,28 +15,83 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Imports
+#   Imports
 # -----------------------------------------------------------------------------
 [[ "${TTUI_LOADED}" != "true" ]] && {
   source /opt/ttui/ttui_lib.sh
 }
 
+
 # -----------------------------------------------------------------------------
-# Prints text surrounded by a box.
-# Box color and text color may be specified.
-# Text may be centered, left justified, right justified.
-# Box size may be specified.
-# Globals:
-#   TBD
-# Arguments: (in any order)
-#   title=title_string_using_underscores_in_place_of_spaces
-#   title_color=r,g,b
-#   title_justification=centered|left|right
-#   box_color=r,g,b
-#   box_width=width
-#   box_height=height
-#   pad_vertical=verticalPaddingValue
-#   pas_horizontal=horizontalPaddingValue
+#   Global Vars
+# -----------------------------------------------------------------------------
+
+
+
+
+tlog::set_default_title_color() {
+  local R=$1
+  local G=$2
+  local B=$3
+  export TLOG_DEFAULT_TITLE_COLOR="${R} ${G} ${B}"
+}
+
+tlog::unset_default_title_color() {
+  unset TLOG_DEFAULT_TITLE_COLOR
+}
+
+tlog::set_default_title_box_color() {
+  local R=$1
+  local G=$2
+  local B=$3
+  export TLOG_DEFAULT_TITLE_BOX_COLOR="${R} ${G} ${B}"
+}
+
+tlog::unset_default_title_box_color() {
+  unset TLOG_DEFAULT_TITLE_BOX_COLOR
+}
+
+tlog::set_default_warning_color() {
+  local R=$1
+  local G=$2
+  local B=$3
+  export TLOG_DEFAULT_WARNING_COLOR="${R} ${G} ${B}"
+}
+
+tlog::unset_default_warning_color() {
+  unset TLOG_DEFAULT_WARNING_COLOR
+}
+
+tlog::set_default_text_color() {
+  local R=$1
+  local G=$2
+  local B=$3
+  export TLOG_DEFAULT_TEXT_COLOR="${R} ${G} ${B}"
+}
+
+tlog::unset_default_text_color() {
+  unset TLOG_DEFAULT_TEXT_COLOR
+}
+
+
+# -----------------------------------------------------------------------------
+#   Prints text surrounded by a box.
+#   Box color and text color may be specified.
+#   Text may be centered, left justified, right justified.
+#   Box size may be specified.
+#
+#   Globals:
+#     TBD
+#
+#   Arguments: (in any order)
+#     title=title_string_using_underscores_in_place_of_spaces
+#     title_color=r,g,b
+#     title_justification=centered|left|right
+#     box_color=r,g,b
+#     box_width=width
+#     box_height=height
+#     pad_vertical=verticalPaddingValue
+#     pas_horizontal=horizontalPaddingValue
 # -----------------------------------------------------------------------------
 ##  Creates a box surrounding text
 ##  box color and text color may be specified
