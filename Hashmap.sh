@@ -127,6 +127,28 @@ Hashmap_get() {
     echo "${VAL}"
 }
 
+
+# -----------------------------------------------------------------------------
+#   "deletes" key/value pair from the hashmap.
+#
+#   Unsets the global variable containing index for value that corresponds to key.
+#   However, in order to avoid having to find and update indexes stored in global 
+#   variables, the key in the $instance_KEYS array and the value in the 
+#   $instance_VALUES array are NOT unset. Instead, the key and value are replaced
+#   with the string "deleted_from_$instance".
+#
+#   FUTURE: consider adding ability to remove multiple key/value pairs 
+#           in a single call.
+#
+#   Globals:
+#       $instance_KEY_$keyname          integer (index)
+#       $instance_KEYS                  array of strings
+#       $instance_VALUES                array of strings
+#       $instance_AVAILABLE_INDEXES     array of integers
+#   Arguments:
+#       $1) name of hashmap instance    string
+#       $2) key name                    string
+# -----------------------------------------------------------------------------
 Hashmap_delete() {
     echo "${FUNCNAME[0]} invoked"
     echo "args: $@"
@@ -199,6 +221,87 @@ Hashmap_delete() {
 }
 
 
+Hashmap_delete_new() {
+    echo "${FUNCNAME[0]} invoked"
+    echo "args: $@"
+    local this=$1
+    local KEY_NAME=$2
+    eval 'local KEYS=${'"${this}"'_KEYS[@]}'
+    eval 'local KEYS_LENGTH=${#'"${this}"'_KEYS[@]}'
+    eval 'local VALS=${'"${this}"'_KEYS[@]}'
+    eval 'local VALS_LENGTH=${#'"${this}"'_VALUES[@]}'
+    eval 'local IDXS_LENGTH=${#'"${this}"'_AVAILABLE_INDEXES[@]}'
+    
+    local prep='local KEY="${'"${this}"'_KEY_'"${KEY_NAME}"'}"'
+    echo $prep
+    eval "$prep"
+    echo "KEY (${KEY_NAME}): ${KEY}"
+    [[ -z  ${KEY} ]] && {
+        echo "${FUNCNAME[0]}: Unable to delete $this hashmap entry. Unknown key: ${KEY_NAME}"
+        exit 1
+    }
+    # prep='local INDEX=${'"${this}_KEY_${KEY_NAME}"'}'
+    # echo $prep
+    # eval $prep
+    local INDEX=${KEY}
+    echo "INDEX: ${INDEX}"
+
+    # print some debug info
+    echo "before delete:"
+    eval "${this}"'::list_resources'
+    # eval 'echo "  ${this}_KEYS: ${'"${this}"'_KEYS[@]}"'
+    # eval 'echo "  ${this}_VALUES: ${'"${this}"'_VALUES[@]}"'
+    # eval 'echo "  ${this}_AVAILABLE_INDEXES length: ${#'"${this}"'_AVAILABLE_INDEXES[@]}"'
+    # eval 'echo "  ${this}_AVAILABLE_INDEXES: ${'"${this}"'_AVAILABLE_INDEXES[@]}"'
+
+    if [[ "${INDEX}" == 0 ]] && [[ "${KEYS_LENGTH}" == 1 ]] && [[ "${VALS_LENGTH}" == 1 ]]; then
+        ## this is the only element.
+        ## reset KEYS and VALS to empty arrays
+        prep="${this}"'_KEYS=()'
+        eval ${prep}
+        # break
+    elif (( INDEX == KEYS_LENGTH - 1 )) && (( INDEX == VALS_LENGTH - 1 )); then
+        ## this is not the only element in the AVAILABLE_INDEXES array 
+        ## so just add it as the last available index
+        echo "${this}"'_AVAILABLE_INDEXES=( "${'"${this}"'_AVAILABLE_INDEXES[@]}" "${'"${INDEX}"'}" )'
+        eval "${this}"'_AVAILABLE_INDEXES=( "${'"${this}"'_AVAILABLE_INDEXES[@]}" "${'"${INDEX}"'}" )'
+    elif [[ ${IDXS_LENGTH} == 1 ]]; then
+        ## insert it before the only element of the AVAILABLE_INDEXES array
+        prep="${this}"'_AVAILABLE_INDEXES=( "'"${INDEX}"'" ${'"${this}"'_AVAILABLE_INDEXES[0]} )'
+        echo $prep
+        eval $prep
+    else
+        ## this is not the last element so insert it before the last element of the AVAILABLE_INDEXES array
+        prep="${this}"'_AVAILABLE_INDEXES=( ${'"${this}"'_AVAILABLE_INDEXES[@]:0:'"$((IDXS_LENGTH - 2))"'} '"${INDEX}"' ${'"${this}"'_AVAILABLE_INDEXES[@]:'"$((IDXS_LENGTH - 2))"'} )'
+        echo $prep
+        eval $prep
+    fi
+
+    ## "remove" key corresponding to this index
+    prep="${this}"'_KEYS['"${INDEX}"']=deleted_from_'"${this}"
+    echo "$prep"
+    eval $prep
+    
+    ## "remove" the value corresponding to this key
+    prep="${this}"'_VALUES['"${INDEX}"']=deleted_from_'"${this}"
+    echo "$prep"
+    eval $prep
+    
+    ## remove the index pointer
+    prep='unset '"${this}"'_KEY_'"${KEY}"
+    echo "$prep"
+    eval $prep
+
+    # print some debug info
+    echo "after delete:"
+    eval "${this}"'::list_resources'
+    # eval 'echo "  ${this}_KEYS: ${'"${this}"'_KEYS[@]}"'
+    # eval 'echo "  ${this}_VALUES: ${'"${this}"'_VALUES[@]}"'
+    # eval 'echo "  ${this}_AVAILABLE_INDEXES length: ${#'"${this}"'_AVAILABLE_INDEXES[@]}"'
+    # eval 'echo "  ${this}_AVAILABLE_INDEXES: ${'"${this}"'_AVAILABLE_INDEXES[@]}"'
+}
+
+
 Hashmap_list() {
     local this=$1
     local prep=
@@ -222,17 +325,17 @@ Hashmap_list_resources() {
     prep='echo -n "# of keys: ${#'"${this}"'_KEYS[@]} | "'
     # echo $prep
     eval "${prep}"
-    Hashmap::print_array "${this}_KEYS"
+    Hashmap::print_array "${this}_KEYS" "deleted_from_${this}"
     
     prep='echo -n "# of vals: ${#'"${this}"'_VALUES[@]} | "'
     # echo "${prep}"
     eval "${prep}"
-    Hashmap::print_array "${this}_VALUES"
+    Hashmap::print_array "${this}_VALUES" "deleted_from_${this}"
     
     prep='echo -n "# avail indexes: ${#'"${this}"'_AVAILABLE_INDEXES[@]} | "'
     # echo "${prep}"
     eval "${prep}"
-    Hashmap::print_array "${this}_AVAILABLE_INDEXES"
+    Hashmap::print_array "${this}_AVAILABLE_INDEXES" "deleted_from_${this}"
 
     for _FUNC in $(compgen -A function "${this}::"); do
         echo "${_FUNC}()"
@@ -243,7 +346,13 @@ Hashmap_list_resources() {
         if [[ "$(declare -p ${_VAR})" =~ "declare -a" ]]; then
             # var is an array
             # echo -n "${_VAR}: "
-            Hashmap::print_array "${_VAR}"
+            if [[ "${_VAR}" == "${this}_KEYS" ]] || [[ "${_VAR}" == "${this}_VALUES" ]]; then
+                # echo "hashmap KEYS or VALUES array"
+                Hashmap::print_array "${_VAR}" "deleted_from_${this}"
+            else
+                # echo "NOT hashmap KEYS or VALUES array"
+                Hashmap::print_array "${_VAR}"
+            fi
         else
             prep='echo "${_VAR}: ${'"${_VAR}"'}"'
             eval $prep
@@ -259,6 +368,14 @@ Hashmap::print_array() {
     local prep=
 
     local ARRAY_NAME=$1
+    local SHOULD_IGNORE_TEXT=false    
+
+    [[ $# -gt 1 ]] && {
+        SHOULD_IGNORE_TEXT=true
+        local TEXT_TO_IGNORE=$2
+    }
+    
+
     # echo "ARRAY_NAME: ${ARRAY_NAME}"
 
     # prep='echo "${ARRAY_NAME}: ${'"${ARRAY_NAME}"'[@]}"'
@@ -282,9 +399,13 @@ Hashmap::print_array() {
     echo -n "${ARRAY_NAME}: [ "
     for ELEMENT in ${ARRAY[@]}; do
         (( ARRAY_LENGTH-- ))
-        echo -n "${ELEMENT}"
+        if [[ ${SHOULD_IGNORE_TEXT} == true ]] && [[ "${ELEMENT}" == "${TEXT_TO_IGNORE}"  ]]; then
+            echo -n " "
+        else 
+            echo -n "${ELEMENT}"
+        fi        
         [[ ARRAY_LENGTH -gt 0 ]] && {
-            echo -n ", "
+            echo -n ","
         }
     done
     echo " ]"
