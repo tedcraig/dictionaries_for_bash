@@ -29,6 +29,7 @@
 
 
 
+
 tlog::set_default_title_color() {
   local R=$1
   local G=$2
@@ -62,17 +63,104 @@ tlog::unset_default_warning_color() {
   unset TLOG_DEFAULT_WARNING_COLOR
 }
 
-tlog::set_default_text_color() {
+tlog::set_default_info_color() {
   local R=$1
   local G=$2
   local B=$3
-  export TLOG_DEFAULT_TEXT_COLOR="${R} ${G} ${B}"
+  export TLOG_DEFAULT_INFO_COLOR="${R} ${G} ${B}"
 }
 
-tlog::unset_default_text_color() {
-  unset TLOG_DEFAULT_TEXT_COLOR
+tlog::unset_default_info_color() {
+  unset TLOG_DEFAULT_INFO_COLOR
 }
 
+
+# _TLOG_set_temp_text_color() {
+#   local R=$1
+#   local G=$2
+#   local B=$3
+#   export _TLOG_TEMP_TEXT_COLOR="${R} ${G} ${B}"
+# }
+
+# _TLOG_unset_temp_text_color() {
+#   unset _TLOG_TEMP_TEXT_COLOR
+# }
+
+# _TLOG_update_text_color() {
+#   if [ -z ${TLOG_DEFAULT_TEXT_COLOR+x} ]; then 
+#     # no default text color
+#     # so unset 
+#     _TLOG_unset_temp_text_color
+#   else 
+#     # default text color is set
+#     echo "$FUNCNAME default text color exists"
+#   fi
+# }
+
+
+tlog::print::info() {
+  local TEXT="$*"
+  [[ -n "${TLOG_DEFAULT_INFO_COLOR}" ]] && {
+    ttui::color::set_color_to_rgb "${TLOG_DEFAULT_INFO_COLOR}"
+    echo "${TEXT}"
+    ttui::color::reset
+    return 0
+  }
+  echo "${TEXT}"
+} 
+
+tlog::print::warning() {
+  local TEXT="$*"
+  [[ -n "${TLOG_DEFAULT_WARNING_COLOR}" ]] && {
+    ttui::color::set_color_to_rgb "${TLOG_DEFAULT_WARNING_COLOR}"
+    echo "${TEXT}"
+    ttui::color::reset
+    return 0
+  }
+  echo "${TEXT}"
+}
+
+tlog::print::error() {
+  local TEXT="$*"
+  [[ -n "${TLOG_DEFAULT_ERROR_COLOR}" ]] && {
+    ttui::color::set_color_to_rgb "${TLOG_DEFAULT_ERROR_COLOR}"
+    echo "${TEXT}"
+    ttui::color::reset
+    return 0
+  }
+  echo "${TEXT}"
+}
+
+tlog::print::attention() {
+  local TEXT="$*"
+  [[ -n "${TLOG_DEFAULT_ATTENTION_COLOR}" ]] && {
+    ttui::color::set_color_to_rgb "${TLOG_DEFAULT_ATTENTION_COLOR}"
+    echo "${TEXT}"
+    ttui::color::reset
+    return 0
+  }
+  echo "${TEXT}"
+}
+
+tlog::print() {
+  local PROP=
+  local VAL=
+  for arg in "$@"; do
+    if [[ "${arg}" == *"="* ]]; then
+      PROP=${arg%=*}
+      VAL=${arg#*=}
+      echo "PROP: ${PROP} | VAL: ${VAL}"
+    else
+      # assume to be text string since no = found
+      echo "PROP: text | VAL: ${arg}"
+    fi
+  done
+
+
+
+  # if 
+
+}
 
 # -----------------------------------------------------------------------------
 #   Prints text surrounded by a box.
@@ -96,7 +184,7 @@ tlog::unset_default_text_color() {
 ##  Creates a box surrounding text
 ##  box color and text color may be specified
 ##  text can be centered, left justified, right justified
-tlog::title_box() {
+tlog::print::title_box() {
   args=("$@")
   # echo "args: ${args[@]}"
   # echo "num args: ${#args[@]}"
