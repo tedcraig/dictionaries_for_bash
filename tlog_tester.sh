@@ -39,15 +39,15 @@ WHITE="212 212 212"
 # -----------------------------------------------------------------------------
 test_title_box() {
 
-  tlog::print::title_box  title=TITLE_BOX_TEST \
-                          title_color=50,255,50 \
-                          box_color=50,160,50 \
+  tlog::print::title_box  title="TITLE BOX - CENTERED" \
+                          title_color="50 255 50" \
+                          box_color="50 160 50" \
                           box_width=40 \
                           box_height=5 \
                           pad_horizontal=2 \
                           title_justification=centered
   echo
-  tlog::print::title_box  title=TITLE_BOX_TEST \
+  tlog::print::title_box  title="TITLE BOX - LEFT JUSTIFIED" \
                           title_color=255,50,50 \
                           box_color=160,50,50 \
                           box_width=40 \
@@ -55,7 +55,7 @@ test_title_box() {
                           pad_horizontal=2 \
                           title_justification=left
   echo
-  tlog::print::title_box  title=TITLE_BOX_TEST \
+  tlog::print::title_box  "TITLE BOX - RIGHT JUSTIFIED" \
                           title_color=25,50,255 \
                           box_color=25,50,160 \
                           box_width=40 \
@@ -78,7 +78,7 @@ main() {
 
   test_print_info
 
-  # test_title_box
+  test_title_box
 
 }
 
