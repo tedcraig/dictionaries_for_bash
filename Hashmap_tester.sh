@@ -58,7 +58,7 @@ TITLE_BOX_DEFAULTS="title_color=255,50,50 \
 create_hashmap_one() {
 
   ## create a hashmap without setting any initial values
-  tlog::title_box title=HASHMAP_ONE $TITLE_BOX_DEFAULTS
+  tlog::print::title_box title=HASHMAP_ONE $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "Hashmap::create hmOne"
@@ -153,9 +153,16 @@ create_hashmap_one() {
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne_AVAILABLE_INDEXES:"
+  echo "hmOne::list_resources"
   ttui::color::set_color_to_rgb "${RESULT}"
-  echo "${hmOne_AVALIABLE_INDEXES[@]}"
+  hmOne::list_resources
+  ttui::color::reset
+  echo
+
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::delete car"
+  ttui::color::set_color_to_rgb "${DEBUG}"
+  hmOne::delete "car"
   ttui::color::reset
   echo
 
@@ -166,6 +173,23 @@ create_hashmap_one() {
   ttui::color::reset
   echo
 
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::add range=far"
+  ttui::color::set_color_to_rgb "${DEBUG}"
+  hmOne::add range=far
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::add os=macos"
+  ttui::color::set_color_to_rgb "${DEBUG}"
+  hmOne::add os=macos
+  ttui::color::reset
+  echo
+
+  ttui::color::set_color_to_rgb "${DESC}"
+  echo "hmOne::list_resources"
+  ttui::color::set_color_to_rgb "${RESULT}"
+  hmOne::list_resources
+  ttui::color::reset
+  echo
 }
 
 
@@ -174,7 +198,7 @@ create_hashmap_one() {
 # -----------------------------------------------------------------------------
 create_hashmap_two() {
 
-  tlog::title_box title=HASHMAP_TWO $TITLE_BOX_DEFAULTS
+  tlog::print::title_box title=HASHMAP_TWO $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "Hashmap::create hmTwo name=Ted age=old"
@@ -227,7 +251,7 @@ create_hashmap_two() {
 # -----------------------------------------------------------------------------
 show_functions_and_variables() {
 
-  tlog::title_box title=DECLARED_FUNCTIONS_AND_VARIABLES $TITLE_BOX_DEFAULTS
+  tlog::print::title_box title=DECLARED_FUNCTIONS_AND_VARIABLES $TITLE_BOX_DEFAULTS
 
   echo "function list:"
   ttui::color::set_color_to_rgb "${GREY}"
@@ -260,39 +284,6 @@ test_print_array() {
 
 
 # -----------------------------------------------------------------------------
-#   test title box
-# -----------------------------------------------------------------------------
-test_title_box() {
-
-  tlog::title_box title=TITLE_BOX_TEST \
-                  title_color=50,255,50 \
-                  box_color=50,160,50 \
-                  box_width=40 \
-                  box_height=5 \
-                  pad_horizontal=2 \
-                  title_justification=centered
-  echo
-  tlog::title_box title=TITLE_BOX_TEST \
-                  title_color=255,50,50 \
-                  box_color=160,50,50 \
-                  box_width=40 \
-                  box_height=5 \
-                  pad_horizontal=2 \
-                  title_justification=left
-  echo
-  tlog::title_box title=TITLE_BOX_TEST \
-                  title_color=25,50,255 \
-                  box_color=25,50,160 \
-                  box_width=40 \
-                  box_height=5 \
-                  pad_horizontal=2 \
-                  title_justification=right
-
-}
-
-
-
-# -----------------------------------------------------------------------------
 #   main
 # -----------------------------------------------------------------------------
 main() {
@@ -307,7 +298,6 @@ main() {
 
   # show_functions_and_variables
 
-  # test_title_box
 
 }
 
