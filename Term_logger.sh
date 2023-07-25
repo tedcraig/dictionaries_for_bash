@@ -202,7 +202,15 @@ tlog::print::title_box() {
   local _PROP=
   local _VAL=
 
-  for arg in ${args[@]}; do
+  for arg in "$@"; do
+
+    [[ "${arg}" != *"="* ]] && {
+      # assume this must be TITLE text if no '=' is found
+      _TITLE="${arg}"
+      _TITLE_LENGTH="${#_TITLE}"
+      continue
+    }
+
     # echo "arg: ${arg}"
     _PROP=${arg%=*}
     _VAL=${arg#*=}
@@ -212,14 +220,16 @@ tlog::print::title_box() {
             title)
                 # echo "title: ${_VAL}"
                 # echo "title: ${_VAL_W_SPACES}"
-                local _VAL_WITH_SPACES=${_VAL//_/' '} # swap all underscores with spaces
-                _TITLE="${_VAL_WITH_SPACES}"
+                # local _VAL_WITH_SPACES=${_VAL//_/' '} # swap all underscores with spaces
+                _TITLE="${_VAL}"
                 _TITLE_LENGTH="${#_TITLE}"
                 ;;
             title_color) 
                 # echo "title_color: ${_VAL}"
-                local _RGB_COLOR=${_VAL//,/' '}
-                _TITLE_COLOR="${_RGB_COLOR}"
+                [[ "${_VAL}" == *","*","* ]] && {
+                  _VAL=${_VAL//,/' '}
+                }
+                _TITLE_COLOR="${_VAL}"
                 ;;
             title_justification) 
                 # echo "title_color: ${_VAL}"
@@ -232,8 +242,10 @@ tlog::print::title_box() {
                 fi
                 ;;
             box_color)
-                local _RGB_COLOR=${_VAL//,/' '}
-                _BOX_COLOR="${_RGB_COLOR}"
+                [[ "${_VAL}" == *","*","* ]] && {
+                  _VAL=${_VAL//,/' '}
+                }
+                _BOX_COLOR="${_VAL}"
                 ;;
             box_width) 
                 # echo "box_width: ${_VAL}"
@@ -292,6 +304,7 @@ tlog::print::title_box() {
           ;;
   esac
 
+  ## for some dirty debuggin':
   # echo "title:                ${_TITLE}"
   # echo "title length:         ${_TITLE_LENGTH}"
   # echo "title_color:          ${_TITLE_COLOR}"
