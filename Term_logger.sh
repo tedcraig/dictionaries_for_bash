@@ -197,6 +197,8 @@ tlog::print::title_box() {
   local _BOX_COLOR="none"
   local _BOX_WIDTH="none"
   local _BOX_HEIGHT=3
+  local _BOX_JUSTIFICATION="left"
+  local _BOX_START_COL=0
   local _PAD_HORIZONTAL=1
   local _PAD_VERTICAL=0
   local _PROP=
@@ -255,6 +257,16 @@ tlog::print::title_box() {
                 # echo "box_height: ${_VAL}"
                 _BOX_HEIGHT="${_VAL}"
                 ;;
+            box_justification) 
+                # echo "title_color: ${_VAL}"
+                local _JUST="${_VAL}"
+                if [[ $_JUST == "centered" ]] || [[ $_JUST == "left" ]] || [[ $_JUST == "right" ]]; then
+                    _BOX_JUSTIFICATION="${_JUST}"
+                else  
+                    echo "${FUNCNAME[0]}: unknown title justification value: ${_JUST}"
+                    continue
+                fi
+                ;;
             pad_vertical) 
                 # echo "box_height: ${_VAL}"
                 _PAD_VERTICAL="${_VAL}"
@@ -284,6 +296,26 @@ tlog::print::title_box() {
     _BOX_HEIGHT=$(( 1 + box_pad_vertical ))
   fi
 
+  ## Determine horizontal placement for box. Assign left starting point
+  ## to _BOX_START_COL.
+  ##
+  ## NOTE:  We do this here because box width, title length, and horizontal pad
+  ## need to be populated in order for this calculation to be processed.
+  ttui::get_term_size
+  case ${_BOX_JUSTIFICATION} in
+      "centered") 
+          _BOX_START_COL=$(( (TTUI_TERM_COLUMNS - _BOX_WIDTH) / 2 ))
+          ;;
+      "left") 
+          _BOX_START_COL=0
+          ;;
+      "right") 
+          _BOX_START_COL=$(( TTUI_TERM_COLUMNS - _BOX_WIDTH ))
+          ;;
+      *) echo 
+          "Error: unknown title_justification value: ${_TITLE_JUSTIFICATION}"
+          ;;
+  esac
   ## Determine horizontal placement for title text. Assign left starting point
   ## to _TITLE_START_COL.
   ##
@@ -307,14 +339,16 @@ tlog::print::title_box() {
   ## for some dirty debuggin':
   # echo "title:                ${_TITLE}"
   # echo "title length:         ${_TITLE_LENGTH}"
-  # echo "title_color:          ${_TITLE_COLOR}"
-  # echo "title_justification:  ${_TITLE_JUSTIFICATION}"
+  # echo "title color:          ${_TITLE_COLOR}"
+  # echo "title justification:  ${_TITLE_JUSTIFICATION}"
   # echo "left pad:             ${_LEFT_PAD}"
-  # echo "box_color:            ${_BOX_COLOR}"
-  # echo "box_width:            ${_BOX_WIDTH}"
+  # echo "box color:            ${_BOX_COLOR}"
+  echo "box width:            ${_BOX_WIDTH}"
   # echo "box_height:           ${_BOX_HEIGHT}"
-  # echo "pad_horizontal:       ${_PAD_HORIZONTAL}"
-  # echo "pad_vertical:         ${_PAD_VERTICAL}"
+  echo "box justification:    ${_BOX_JUSTIFICATION}"
+  echo "box start column:     ${_BOX_START_COL}"
+  # echo "pad horizontal:       ${_PAD_HORIZONTAL}"
+  # echo "padvertical:         ${_PAD_VERTICAL}"
   # echo "box height / 2: $(( (_BOX_HEIGHT / 2) + 1))"
 
   ## print empty lines covering the vertical height of the box
