@@ -62,6 +62,15 @@ test_title_box() {
                           box_height=5 \
                           pad_horizontal=2 \
                           title_justification=right
+  echo
+  tlog::print::title_box  "BOX - CENTERED" \
+                          title_color=100,200,160 \
+                          box_color=75,140,110 \
+                          box_width=60 \
+                          box_height=5 \
+                          pad_horizontal=2 \
+                          title_justification=centered \
+                          box_justification=centered
 
 }
 
@@ -74,11 +83,15 @@ test_print_info() {
 
 main() {
 
-  tlog::print prop1=val1 text="myText" "text=all in quotes" text="only value in quotes" "no equal sign"
+  # tlog::print prop1=val1 text="myText" "text=all in quotes" text="only value in quotes" "no equal sign"
 
   test_print_info
 
   test_title_box
+
+  # ttui::get_term_width
+  num_cols=$(ttui::get_term_width force)
+  echo "num_cols: ${num_cols}"
 
 }
 
