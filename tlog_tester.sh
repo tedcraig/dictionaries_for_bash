@@ -71,7 +71,34 @@ test_title_box() {
                           pad_horizontal=2 \
                           title_justification=centered \
                           box_justification=centered
-
+  tlog::print::title_box  title="BOX - LEFT JUSTIFIED | TITLE RIGHT" \
+                          title_color="50 255 50" \
+                          box_color="50 160 50" \
+                          box_width=80 \
+                          box_height=5 \
+                          pad_horizontal=2 \
+                          title_justification=right \
+                          box_justification=left
+  echo
+  tlog::print::title_box  title="BOX - RIGHT JUSTIFIED | TITLE LEFT" \
+                          title_color=255,50,50 \
+                          box_color=160,50,50 \
+                          box_width=40 \
+                          box_height=5 \
+                          pad_horizontal=2 \
+                          title_justification=left \
+                          box_justification=left
+  echo
+  # local _TERM_WIDTH=$( ttui::get_term_width )
+  tlog::print::title_box  "BOX - CENTERED | TITLE RIGHT" \
+                          title_color=25,50,255 \
+                          box_color=25,50,160 \
+                          box_width=$(( $(ttui::get_term_width) - 2 )) \
+                          box_height=5 \
+                          pad_horizontal=2 \
+                          title_justification=right \
+                          box_justification=center
+  echo
 }
 
 test_print_info() {
