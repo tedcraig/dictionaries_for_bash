@@ -87,15 +87,15 @@ test_title_box() {
                           box_height=5 \
                           pad_horizontal=2 \
                           title_justification=left \
-                          box_justification=left
+                          box_justification=right
   echo
   # local _TERM_WIDTH=$( ttui::get_term_width )
   tlog::print::title_box  "BOX - CENTERED | TITLE RIGHT" \
                           title_color=25,50,255 \
                           box_color=25,50,160 \
-                          box_width=$(( $(ttui::get_term_width) - 2 )) \
+                          box_width=$(( $(ttui::get_term_width) )) \
                           box_height=5 \
-                          pad_horizontal=2 \
+                          pad_horizontal=10 \
                           title_justification=right \
                           box_justification=center
   echo
@@ -116,10 +116,8 @@ main() {
 
   test_title_box
 
-  # ttui::get_term_width
-  num_cols=$(ttui::get_term_width force)
-  echo "num_cols: ${num_cols}"
-
+  
+  
 }
 
 ## invoke main
