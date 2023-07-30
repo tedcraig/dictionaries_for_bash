@@ -156,10 +156,6 @@ tlog::print() {
     fi
   done
 
-
-
-  # if 
-
 }
 
 # -----------------------------------------------------------------------------
@@ -198,7 +194,7 @@ tlog::print::title_box() {
   local _BOX_WIDTH="none"
   local _BOX_HEIGHT=3
   local _BOX_JUSTIFICATION="left"
-  local _BOX_START_COL=0
+  local _BOX_START_COL=1
   local _PAD_HORIZONTAL=1
   local _PAD_VERTICAL=0
   local _PROP=
@@ -307,10 +303,10 @@ tlog::print::title_box() {
           _BOX_START_COL=$(( (TTUI_TERM_COLUMNS - _BOX_WIDTH) / 2 ))
           ;;
       "left") 
-          _BOX_START_COL=0
+          _BOX_START_COL=1
           ;;
       "right") 
-          _BOX_START_COL=$(( TTUI_TERM_COLUMNS - _BOX_WIDTH ))
+          _BOX_START_COL=$(( TTUI_TERM_COLUMNS - _BOX_WIDTH + 1 ))
           ;;
       *) echo 
           "Error: unknown title_justification value: ${_TITLE_JUSTIFICATION}"
@@ -323,13 +319,16 @@ tlog::print::title_box() {
   ## need to be populated in order for this calculation to be processed.
   case ${_TITLE_JUSTIFICATION} in
       "centered") 
-          _TITLE_START_COL=$(( ((_BOX_WIDTH - _TITLE_LENGTH) / 2) + _BOX_START_COL ))
+          # _TITLE_START_COL=$(( ((_BOX_WIDTH - _TITLE_LENGTH) / 2) + _BOX_START_COL ))
+          _TITLE_START_COL=$(( ((_BOX_WIDTH - _TITLE_LENGTH) / 2) + _BOX_START_COL - 1 ))
           ;;
       "left") 
-          _TITLE_START_COL=$(( _BOX_START_COL + _PAD_HORIZONTAL + 1 ))
+          # _TITLE_START_COL=$(( _BOX_START_COL + _PAD_HORIZONTAL + 1 ))
+          _TITLE_START_COL=$(( _BOX_START_COL + _PAD_HORIZONTAL ))
           ;;
       "right") 
-          _TITLE_START_COL=$(( _BOX_START_COL+ _BOX_WIDTH - _PAD_HORIZONTAL - 1 - _TITLE_LENGTH ))
+          # _TITLE_START_COL=$(( _BOX_START_COL + _BOX_WIDTH - _PAD_HORIZONTAL - 1 - _TITLE_LENGTH ))
+          _TITLE_START_COL=$(( _BOX_START_COL + _BOX_WIDTH - _PAD_HORIZONTAL - 2 - _TITLE_LENGTH ))
           ;;
       *) echo 
           "Error: unknown title_justification value: ${_TITLE_JUSTIFICATION}"
@@ -343,10 +342,10 @@ tlog::print::title_box() {
   # echo "title justification:  ${_TITLE_JUSTIFICATION}"
   # echo "left pad:             ${_LEFT_PAD}"
   # echo "box color:            ${_BOX_COLOR}"
-  echo "box width:            ${_BOX_WIDTH}"
+  # echo "box width:            ${_BOX_WIDTH}"
   # echo "box_height:           ${_BOX_HEIGHT}"
-  echo "box justification:    ${_BOX_JUSTIFICATION}"
-  echo "box start column:     ${_BOX_START_COL}"
+  # echo "box justification:    ${_BOX_JUSTIFICATION}"
+  # echo "box start column:     ${_BOX_START_COL}"
   # echo "pad horizontal:       ${_PAD_HORIZONTAL}"
   # echo "padvertical:         ${_PAD_VERTICAL}"
   # echo "box height / 2: $(( (_BOX_HEIGHT / 2) + 1))"
@@ -355,21 +354,28 @@ tlog::print::title_box() {
   for ((i=0; i < _BOX_HEIGHT; i++)); do
     echo
   done
+
   ## move cursor to the middle in prep for printing title
   ttui::cursor::move_up $(( (_BOX_HEIGHT / 2) + 1 ))
+  
   ## move cursor right by amount appropriate for specified justification
   ttui::cursor::move_right ${_TITLE_START_COL}
+  
   ## print the title
   ttui::color::set_color_to_rgb ${_TITLE_COLOR}
   printf "%s" "${_TITLE}"
+  
   ## move cursor into position to draw box
   ttui::cursor::move_to_bottom
   ttui::cursor::move_left 999
   ttui::cursor::move_up ${_BOX_HEIGHT}
-  ttui::cursor::move_right ${_BOX_START_COL}
+  
   ## draw box
   ttui::color::set_color_to_rgb ${_BOX_COLOR}
+  # ttui::logger::enable_logging
   ttui::draw_box ${_BOX_WIDTH} ${_BOX_HEIGHT} ${_BOX_START_COL}
+  # ttui::logger::disable_logging
+  
   ## reset color
   ttui::color::reset
 }
