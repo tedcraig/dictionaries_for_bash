@@ -45,11 +45,19 @@ DESC="${WHITE}"
 RESULT="${GOLD2}"
 DEBUG="${GREY}"
 
+# TITLE_BOX_DEFAULTS="title_color=255,50,50 \
+#                 box_color=160,50,50 \
+#                 box_width=40 \
+#                 pad_horizontal=2 \
+#                 title_justification=centered"
+
 TITLE_BOX_DEFAULTS="title_color=255,50,50 \
-                box_color=160,50,50 \
-                box_width=40 \
-                pad_horizontal=2 \
-                title_justification=centered"
+                  box_color=160,50,50 \
+                  box_width=$(ttui::get_term_width force) \
+                  box_height=3 \
+                  pad_horizontal=2 \
+                  title_justification=centered \
+                  box_justification=centered"
 
 
 # -----------------------------------------------------------------------------
@@ -58,7 +66,7 @@ TITLE_BOX_DEFAULTS="title_color=255,50,50 \
 create_hashmap_one() {
 
   ## create a hashmap without setting any initial values
-  tlog::print::title_box title=HASHMAP_ONE $TITLE_BOX_DEFAULTS
+  tlog::print::title_box title="HASHMAP ONE" $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "Hashmap::create hmOne"
