@@ -2,10 +2,10 @@
 
 # =============================================================================
 #
-#   name:   Hashmap.sh
+#   name:   dictionaries_for_bash
 #   auth:   ted craig
 #
-#   desc:   Provides hacky, hashmap/dictionary-like data "object" for bash v3
+#   desc:   Provides hacky, dictionary-like data "object" for bash v3
 #           (or other bash versions that do not support associative arrays).
 #
 #   note:   Developed and tested on MacOs Ventura using bash v3.2.57(1)-release
@@ -13,15 +13,15 @@
 # =============================================================================
 
 
-Hashmap::create() {
+Dictionary::create() {
     [[ $# -lt 1 ]] && {
         echo "$FUNCNAME requires at least one argument."
         exit 1
     }
     
-    ## setup infrastructure for this hashmap instance
+    ## setup infrastructure for this dictionary instance
     local this=$1
-    local class="Hashmap"
+    local class="Dictionary"
     
     eval "${this}_KEYS=()"
     eval "${this}_VALUES=()"
@@ -43,12 +43,12 @@ Hashmap::create() {
         ## no key/value pairs, so break out of this function
         return
     }
-    Hashmap_add "${this}" "$@"
+    Dictionary_add "${this}" "$@"
 }
 
 
-## add key/value pairs to hashmap
-Hashmap_add() {
+## add key/value pairs to dictionary
+Dictionary_add() {
     echo "${FUNCNAME[0]} invoked"
     echo "args: $@"
     local this=$1
@@ -103,7 +103,7 @@ Hashmap_add() {
 }
 
 
-Hashmap_get() {
+Dictionary_get() {
     # echo "${FUNCNAME[0]} invoked"
     # echo "args: $@"
     local this=$1
@@ -113,7 +113,7 @@ Hashmap_get() {
     eval "$prep"
     # echo "var: ${var}"
     [[ -z  ${var} ]] && {
-        echo "${FUNCNAME[0]}: Unable to get $this hashmap value. Unknown key: $KEY"
+        echo "${FUNCNAME[0]}: Unable to get $this dictionary value. Unknown key: $KEY"
         exit 1
     }
     local prep='local INDEX=${'"${this}_KEY_${KEY}"'}'
@@ -129,7 +129,7 @@ Hashmap_get() {
 
 
 # -----------------------------------------------------------------------------
-#   "deletes" key/value pair from the hashmap.
+#   "deletes" key/value pair from the dictionary.
 #
 #   Unsets the global variable containing index for value that corresponds to key.
 #   However, in order to avoid having to find and update indexes stored in global 
@@ -146,10 +146,10 @@ Hashmap_get() {
 #       $instance_VALUES                array of strings
 #       $instance_AVAILABLE_INDEXES     array of integers
 #   Arguments:
-#       $1) name of hashmap instance    string
+#       $1) name of dictionary instance    string
 #       $2) key name                    string
 # -----------------------------------------------------------------------------
-Hashmap_delete() {
+Dictionary_delete() {
     echo "${FUNCNAME[0]} invoked"
     echo "args: $@"
     local this=$1
@@ -162,7 +162,7 @@ Hashmap_delete() {
     eval "$prep"
     echo "var: ${var}"
     [[ -z  ${var} ]] && {
-        echo "${FUNCNAME[0]}: Unable to delete $this hashmap entry. Unknown key: $KEY"
+        echo "${FUNCNAME[0]}: Unable to delete $this dictionary entry. Unknown key: $KEY"
         exit 1
     }
     prep='local INDEX=${'"${this}_KEY_${KEY}"'}'
@@ -221,7 +221,7 @@ Hashmap_delete() {
 }
 
 
-Hashmap_delete_new() {
+Dictionary_delete_new() {
     echo "${FUNCNAME[0]} invoked"
     echo "args: $@"
     local this=$1
@@ -237,7 +237,7 @@ Hashmap_delete_new() {
     eval "$prep"
     echo "KEY (${KEY_NAME}): ${KEY}"
     [[ -z  ${KEY} ]] && {
-        echo "${FUNCNAME[0]}: Unable to delete $this hashmap entry. Unknown key: ${KEY_NAME}"
+        echo "${FUNCNAME[0]}: Unable to delete $this dictionary entry. Unknown key: ${KEY_NAME}"
         exit 1
     }
     # prep='local INDEX=${'"${this}_KEY_${KEY_NAME}"'}'
@@ -302,7 +302,7 @@ Hashmap_delete_new() {
 }
 
 
-Hashmap_list() {
+Dictionary_list() {
     local this=$1
     local prep=
     echo -n "$this:"
@@ -318,24 +318,24 @@ Hashmap_list() {
 }
 
 
-Hashmap_list_resources() {
+Dictionary_list_resources() {
     
     local this=$1
     local prep=
     prep='echo -n "# of keys: ${#'"${this}"'_KEYS[@]} | "'
     # echo $prep
     eval "${prep}"
-    Hashmap::print_array "${this}_KEYS" "deleted_from_${this}"
+    Dictionary::print_array "${this}_KEYS" "deleted_from_${this}"
     
     prep='echo -n "# of vals: ${#'"${this}"'_VALUES[@]} | "'
     # echo "${prep}"
     eval "${prep}"
-    Hashmap::print_array "${this}_VALUES" "deleted_from_${this}"
+    Dictionary::print_array "${this}_VALUES" "deleted_from_${this}"
     
     prep='echo -n "# avail indexes: ${#'"${this}"'_AVAILABLE_INDEXES[@]} | "'
     # echo "${prep}"
     eval "${prep}"
-    Hashmap::print_array "${this}_AVAILABLE_INDEXES" "deleted_from_${this}"
+    Dictionary::print_array "${this}_AVAILABLE_INDEXES" "deleted_from_${this}"
 
     for _FUNC in $(compgen -A function "${this}::"); do
         echo "${_FUNC}()"
@@ -347,11 +347,11 @@ Hashmap_list_resources() {
             # var is an array
             # echo -n "${_VAR}: "
             if [[ "${_VAR}" == "${this}_KEYS" ]] || [[ "${_VAR}" == "${this}_VALUES" ]]; then
-                # echo "hashmap KEYS or VALUES array"
-                Hashmap::print_array "${_VAR}" "deleted_from_${this}"
+                # echo "dictionary KEYS or VALUES array"
+                Dictionary::print_array "${_VAR}" "deleted_from_${this}"
             else
-                # echo "NOT hashmap KEYS or VALUES array"
-                Hashmap::print_array "${_VAR}"
+                # echo "NOT dictionary KEYS or VALUES array"
+                Dictionary::print_array "${_VAR}"
             fi
         else
             prep='echo "${_VAR}: ${'"${_VAR}"'}"'
@@ -360,7 +360,7 @@ Hashmap_list_resources() {
     done
 }
 
-Hashmap::print_array() {
+Dictionary::print_array() {
 
     # echo "${FUNCNAME[0]} invoked"
     # echo "args: $@"

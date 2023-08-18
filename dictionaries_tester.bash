@@ -2,25 +2,24 @@
 
 # =============================================================================
 #
-#   name:   Hashmap_tester.sh
+#   name:   dictionaries_tester.bash
 #   auth:   ted craig
 #
-#   desc:   tests functionality of Hashmap.sh and Term_logger.sh during 
-#           development of those scripts.
+#   desc:   tests functionality of dictionaries_for_bash library during development.
 #
-#   dependancies:   ttui_lib.sh, Hashmap.sh, Term_logger.sh
+#   dependancies:   ttui_lib.sh, dictionaries_for_bash, Term_logger.sh
 #
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 #   imports
 # -----------------------------------------------------------------------------
-## import "hashmap" functionality
-source ./Hashmap.sh
-source ./Term_logger.sh
+## import "dictionary" functionality
+source ./dictionaries_for_bash
+source ../term_logger/Term_logger.sh
 
 [[ "${TTUI_LOADED}" != "true" ]] && {
-  source /opt/ttui/ttui_lib.sh
+  source ~/scripts/ttui/ttui_lib.sh
 }
 
 
@@ -56,47 +55,47 @@ TITLE_BOX_DEFAULTS="title_color=255,50,50 \
                   box_width=$(ttui::get_term_width force) \
                   box_height=3 \
                   pad_horizontal=2 \
-                  title_justification=centered \
+                  title_justification=center \
                   box_justification=centered"
 
 
 # -----------------------------------------------------------------------------
-#   create hashmap 1
+#   create dictionary 1
 # -----------------------------------------------------------------------------
-create_hashmap_one() {
+create_dictionary_one() {
 
-  ## create a hashmap without setting any initial values
-  tlog::print::title_box title="HASHMAP ONE" $TITLE_BOX_DEFAULTS
+  ## create a dictionary without setting any initial values
+  tlog::print::title_box title="DICTIONARY ONE" $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "Hashmap::create hmOne"
+  echo "Dictionary::create dictOne"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  Hashmap::create hmOne
+  Dictionary::create dictOne
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add age=48"
+  echo "dictOne::add age=48"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add age=48
+  dictOne::add age=48
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add name=djthadius"
+  echo "dictOne::add name=djthadius"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add name=djthadius
+  dictOne::add name=djthadius
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::get age -> assign to AGE"
+  echo "dictOne::get age -> assign to AGE"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  AGE=$(hmOne::get age)
+  AGE=$(dictOne::get age)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "AGE: $AGE"
   echo
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::get name --> assign to NAME"
+  echo "dictOne::get name --> assign to NAME"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  NAME=$(hmOne::get name)
+  NAME=$(dictOne::get name)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "NAME: $NAME"
   ttui::color::reset
@@ -112,133 +111,133 @@ create_hashmap_one() {
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add id=12345"
+  echo "dictOne::add id=12345"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add id=12345
+  dictOne::add id=12345
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "listing pairs..."
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list
+  dictOne::list
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::delete name"
+  echo "dictOne::delete name"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::delete "name"
+  dictOne::delete "name"
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "listing pairs..."
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list
+  dictOne::list
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne_AVAILABLE_INDEXES:"
+  echo "dictOne_AVAILABLE_INDEXES:"
   ttui::color::set_color_to_rgb "${RESULT}"
-  echo "${hmOne_AVAILABLE_INDEXES[@]}"
+  echo "${dictOne_AVAILABLE_INDEXES[@]}"
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add car=lotus"
+  echo "dictOne::add car=lotus"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add car=lotus
+  dictOne::add car=lotus
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
   echo "listing pairs..."
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list
+  dictOne::list
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::list_resources"
+  echo "dictOne::list_resources"
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list_resources
+  dictOne::list_resources
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::delete car"
+  echo "dictOne::delete car"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::delete "car"
+  dictOne::delete "car"
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::list_resources"
+  echo "dictOne::list_resources"
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list_resources
+  dictOne::list_resources
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add range=far"
+  echo "dictOne::add range=far"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add range=far
+  dictOne::add range=far
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::add os=macos"
+  echo "dictOne::add os=macos"
   ttui::color::set_color_to_rgb "${DEBUG}"
-  hmOne::add os=macos
+  dictOne::add os=macos
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmOne::list_resources"
+  echo "dictOne::list_resources"
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmOne::list_resources
+  dictOne::list_resources
   ttui::color::reset
   echo
 }
 
 
 # -----------------------------------------------------------------------------
-#   create hashmap 2
+#   create dictionary 2
 # -----------------------------------------------------------------------------
-create_hashmap_two() {
+create_dictionary_two() {
 
-  tlog::print::title_box title=HASHMAP_TWO $TITLE_BOX_DEFAULTS
+  tlog::print::title_box title=DICTIONARY_TWO $TITLE_BOX_DEFAULTS
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "Hashmap::create hmTwo name=Ted age=old"
-  Hashmap::create hmTwo name=Ted age=old
+  echo "Dictionary::create dictTwo name=Ted age=old"
+  Dictionary::create dictTwo name=Ted age=old
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmTwo::get age"
+  echo "dictTwo::get age"
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmTwo::get age
+  dictTwo::get age
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmTwo::get name"
+  echo "dictTwo::get name"
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmTwo::get name
+  dictTwo::get name
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmTwo::get age -> assign to AGE2"
-  AGE2=$(hmTwo::get age)
+  echo "dictTwo::get age -> assign to AGE2"
+  AGE2=$(dictTwo::get age)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "AGE2: $AGE2"
   ttui::color::reset
   echo
 
   ttui::color::set_color_to_rgb "${DESC}"
-  echo "hmTwo::get name --> assign to NAME2"
-  NAME2=$(hmTwo::get name)
+  echo "dictTwo::get name --> assign to NAME2"
+  NAME2=$(dictTwo::get name)
   ttui::color::set_color_to_rgb "${RESULT}"
   echo "NAME2: $NAME2"
   ttui::color::reset
@@ -247,7 +246,7 @@ create_hashmap_two() {
   ttui::color::set_color_to_rgb "${DESC}"
   echo "listing pairs..."
   ttui::color::set_color_to_rgb "${RESULT}"
-  hmTwo::list
+  dictTwo::list
   ttui::color::reset
   echo
 
@@ -267,15 +266,15 @@ show_functions_and_variables() {
   echo
 
   ttui::color::reset
-  echo "hmOne variable list:"
+  echo "dictOne variable list:"
   ttui::color::set_color_to_rgb "${GREY}"
-  compgen -A variable hmOne_
+  compgen -A variable dictOne_
   echo
 
   ttui::color::reset
-  echo "hmTwo variable list:"
+  echo "dictTwo variable list:"
   ttui::color::set_color_to_rgb "${GREY}"
-  compgen -A variable hmTwo_
+  compgen -A variable dictTwo_
 
   ttui::color::reset
 
@@ -286,7 +285,7 @@ test_print_array() {
 
   echo "Print Array test:"
   test_array=(joe blow rogan)
-  Hashmap::print_array test_array
+  Dictionary::print_array test_array
 
 }
 
@@ -298,9 +297,9 @@ main() {
 
   # test_print_array  
 
-  create_hashmap_one
+  create_dictionary_one
 
-  # create_hashmap_two
+  # create_dictionary_two
 
   
 
