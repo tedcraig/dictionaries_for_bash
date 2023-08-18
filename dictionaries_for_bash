@@ -10,6 +10,26 @@
 #
 #   note:   Developed and tested on MacOs Ventura using bash v3.2.57(1)-release
 #
+# -----------------------------------------------------------------------------
+#   create dictionary with specified name:
+#       Dictionary::create <dictionary_name> [<KEY>=<VALUE> [...]]
+#
+#   add key/value pair(s) to dictionary
+#       <dictionary_name>::add <KEY>=<VALUE> [...]
+#
+#   get value for specified key - result is echoed
+#       <dictionary_name>::get <KEY>
+#       my_val=$(<dictionary_name>::get <KEY>)
+#
+#   delete key/value pair
+#       <dictionary_name>::delete <KEY>
+#
+#   print list of key/value pairs - formatted: dictionary_name: key1=val1 key2=val2
+#       <dictionary_name>::list
+#
+#   prinst list of all dictionary-related set variables and functions for the specified dictionary -
+#   result is printed on serveral lines, one per resource
+#       <dictionary_name>::list_resources
 # =============================================================================
 
 
