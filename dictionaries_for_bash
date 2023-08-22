@@ -33,6 +33,24 @@
 # =============================================================================
 
 
+# -----------------------------------------------------------------------------
+#   GLOBALS
+# -----------------------------------------------------------------------------
+DICTIONARIES_FOR_BASH_LOADED=false  # scripts that source this on can test if this script has been loaded
+
+# -----------------------------------------------------------------------------
+#   Constructor for Dictionary "class".
+#
+#   Creates an instance of the Dictionary class.
+#
+#   Globals:
+#       $instance_KEYS                  array of strings
+#       $instance_VALUES                array of strings
+#       $instance_AVAILABLE_INDEXES     array of integers
+#   Arguments:
+#       $1                  name to give this Dictionary
+#       [<key>=<value>]     key/value pair(s) to be added to Dictionary at time of creation
+# -----------------------------------------------------------------------------
 Dictionary::create() {
     [[ $# -lt 1 ]] && {
         echo "$FUNCNAME requires at least one argument."
@@ -166,8 +184,8 @@ Dictionary_get() {
 #       $instance_VALUES                array of strings
 #       $instance_AVAILABLE_INDEXES     array of integers
 #   Arguments:
-#       $1) name of dictionary instance    string
-#       $2) key name                    string
+#       $1) name of dictionary instance     string
+#       $2) key name                        string
 # -----------------------------------------------------------------------------
 Dictionary_delete() {
     echo "${FUNCNAME[0]} invoked"
@@ -431,7 +449,8 @@ Dictionary::print_array() {
     echo " ]"
 }
 
-other_func() {
-    # echo ${FUNCNAME[0]} invoked
-    echo "one two three"
-}
+
+# -----------------------------------------------------------------------------
+#   Toggle LOADED flag to true
+# -----------------------------------------------------------------------------
+DICTIONARIES_FOR_BASH_LOADED=true
