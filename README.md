@@ -4,13 +4,10 @@
 
 Provides hacky, dictionary-like data "object" for bash v3 (or other bash versions that do not support associative arrays).
 
-``┏━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┓``  
-``┃ filename            │ dictionaries_for_bash ┃``  
-``┠─────────────────────┼───────────────────────┨``  
-``┃ author              │ Ted Craig             ┃``  
-``┠─────────────────────┼───────────────────────┨``  
-``┃ version             │ 1.0.0 beta            ┃``  
-``┗━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┛``  
+
+``filename:    dictionaries_for_bash``  
+``author:      Ted Craig``  
+``version:     1.0.0 beta``  
 
 ## Dev Notes
 
