@@ -4,12 +4,23 @@
 
 Provides hacky, dictionary-like data "object" for bash v3 (or other bash versions that do not support associative arrays).
 
-filename: dictionaries_for_bash
-author: Ted Craig
+``┏━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┓``  
+``┃ filename            │ dictionaries_for_bash ┃``  
+``┠─────────────────────┼───────────────────────┨``  
+``┃ author              │ Ted Craig             ┃``  
+``┠─────────────────────┼───────────────────────┨``  
+``┃ version             │ 1.0.0 beta            ┃``  
+``┗━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┛``  
 
 ## Dev Notes
 
 Developed and tested on MacOs Ventura using bash v3.2.57(1)-release. Not extensively tested elsewhere.
+
+Class functionality is simulated, then built key-value pair data structure on top of it.  Note that data which would be private/encapsulated is, instead, global and public do to the nature and limitations of the Bash language.  
+
+**Note**: When key/value pairs are "deleted" from a dictionary, the corresponding array element is **not removed**; instead, the data is set to a reserved value indicating that the data has been "deleted".  When new pairs are added, the dictionary will prioritize populating "deleted" indeces.  That said, if we have a dictionary with 20 elements, then "delete" 19 of them, the dictionary will retain the memory footprint of the 20 element array eventhough only one element is currently active.
+
+Overall, this implementaion is not especially idiomatic for Bash and is probably normally outside of the intended use-case for the language.  However, this was built to support an even more rediculously out-of-scope project: a terminal UI framework written in Bash for use in Bash.
 
 ## Usage
 
