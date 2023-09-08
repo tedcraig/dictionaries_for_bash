@@ -7,13 +7,13 @@ Provides hacky, dictionary-like data "object" for bash v3 (or other bash version
 
 ``filename:    dictionaries_for_bash``  
 ``author:      Ted Craig``  
-``version:     1.0.0 beta``  
+``version:     1.0.1 beta``  
 
 ## Dev Notes
 
 Developed and tested on MacOs Ventura using bash v3.2.57(1)-release. Not extensively tested elsewhere.
 
-Class functionality is simulated, then built key-value pair data structure on top of it.  Note that data which would be private/encapsulated is, instead, global and public do to the nature and limitations of the Bash language.  
+Class functionality is simulated, then built key-value pair data structure on top of it.  Note that data which would be private/encapsulated is, instead, global and public due to the nature and limitations of the Bash language.  
 
 **Note**: When key/value pairs are "deleted" from a dictionary, the corresponding array element is **not removed**; instead, the data is set to a reserved value indicating that the data has been "deleted".  When new pairs are added, the dictionary will prioritize populating "deleted" indeces.  That said, if we have a dictionary with 20 elements, then "delete" 19 of them, the dictionary will retain the memory footprint of the 20 element array eventhough only one element is currently active.
 
